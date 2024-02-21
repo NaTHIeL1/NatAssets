@@ -1,0 +1,26 @@
+{
+    "name": "NatAssetEditor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:5c1ff9bd975acec488150743d53a93ca",
+        "GUID:c5ecc461727906345a35491a0440694f",
+        "GUID:5265128a643518943a1f5d3d499418b8"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.scriptablebuildpipeline",
+            "expression": "",
+            "define": "NATASSET_SBP_SUPPORT"
+        }
+    ],
+    "noEngineReferences": false
+}

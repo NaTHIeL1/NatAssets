@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 1
+  m_Script: {fileID: 11500000, guid: 9e7e45e31f4b40cfb2df7c9bcc6d6b3d, type: 3}
+  m_Name: NatAssetBuildSetting
+  m_EditorClassIdentifier: 
+  EditorTargetPlatform: 19
+  BuildCompression: 2
+  GlobalBundleEncrypt: 0
+  OutPutPath: AssetBundles
+  BuildPlatforms:
+  - ValidBuildTarget: 9
+    isSelect: 0
+  - ValidBuildTarget: 13
+    isSelect: 0
+  - ValidBuildTarget: 19
+    isSelect: 1
+  CopyGroup: 
+  VirtualFiles:
+  - _name: Prefabs
+    _fileName: Assets/Res/Prefabs
+    _isDirectory: 1
+    _collectorName: NAssetToOneBundle
+    _encryptName: 0
+    _group: Base
+  tempBundleBuildInfos: []
