@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 068e18b481be8884393126463df65940, type: 3}
   m_Name: NatAssetSObj
   m_EditorClassIdentifier: 
-  RunWay: 2
+  RunWay: 1
