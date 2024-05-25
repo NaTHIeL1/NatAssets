@@ -27,6 +27,32 @@ namespace NATFrameWork.NatAsset.Runtime
         public string[] Dependencies;
         //包含资源
         public List<AssetManifest> Assets;
+
+        private string _relativePath = string.Empty;
+
+        /// <summary>
+        /// 用于加载时的实际路径
+        /// </summary>
+        public string RelativePath
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_relativePath))
+                {
+                    if(IsAppendHash)
+                    {
+                        string[] nameArray = BundlePath.Split('.');
+                        string hashBundleName = $"{nameArray[0]}_{Hash}.{nameArray[1]}";
+                        _relativePath = hashBundleName;
+                    }
+                    else
+                    {
+                        _relativePath = BundlePath;
+                    }
+                }
+                return _relativePath;
+            }
+        }
         
         public void SerializeToBinary(BinaryWriter bw)
         {

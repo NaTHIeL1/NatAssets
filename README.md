@@ -17,7 +17,7 @@
 + 右侧点击AddFolderPackage，选择对应的资源文件夹；右侧点击AddFilePackage，选择对应的资源文件
 + 再左侧面板点击选中目标package， Collector为资源分包策略，Encrypt为资源加密策略，Group为资源所属组类别（Group目前未开发完成）
 + PreBundlesView页面点击Refresh可以预览当前资源分包策略的分包结果
-+ Build窗口，ChooseBatchBuild处勾选需要打包资源的目标平台，默认输出路径为与Assets同级目录AssetBundles，资源对打入对应平台的文件夹中，Version为版本号，Compression选择打包压缩格式，建议选LZ4，GlobalEncrypt为全局资源加密方式。
++ Build窗口，ChooseBatchBuild处勾选需要打包资源的目标平台，默认输出路径为与Assets同级目录AssetBundles，资源对打入对应平台的文件夹中，Version为版本号，Compression选择打包压缩格式，建议选LZ4，GlobalEncrypt为全局资源加密方式，勾选AppendHash可使打出的文件拥有hash后缀。
 + 点击BundleBuild打包资源
 + ClearModule下，提供了三种清理缓存的方式
 + Version面板， Refresh按钮刷新界面，PlatformTarget选中目标平台，框中输入需要的group名称，电一拷贝按钮将目标资源拷贝到StreamingAsset目录下。
@@ -236,4 +236,3 @@ public List<string> GenerateExcludeFilName()
 + 加入资源组概念，后续调整配置文件，以实现如按关卡下载资源等目标。
 + 完成Handle面板的代码。
 + 完成资源更新方面的代码。
-+ 增加新的打包选项，在bundle名后附加hash字符串。

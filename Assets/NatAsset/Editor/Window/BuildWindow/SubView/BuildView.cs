@@ -129,6 +129,12 @@ namespace NATFrameWork.NatAsset.Editor
                 GUILayout.TextField(version, new[] {GUILayout.ExpandWidth(true)});
             }
 
+            using(new EditorGUILayout.HorizontalScope())
+            {
+                NatAssetEditorUtil.AppendHash = EditorGUILayout.Toggle("Append Hash", NatAssetEditorUtil.AppendHash);
+                NatAssetEditorUtil.SetSettingDirty();
+            }
+
             using (new EditorGUILayout.HorizontalScope())
             {
                 NatAssetEditorUtil.BuildCompression = (CompressOptions) EditorGUILayout.IntPopup(

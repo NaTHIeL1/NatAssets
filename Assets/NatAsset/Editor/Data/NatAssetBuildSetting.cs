@@ -88,6 +88,8 @@ namespace NATFrameWork.NatAsset.Editor
         /// </summary>
         [SerializeField] internal List<BuildPlatform> BuildPlatforms;
 
+        [SerializeField] internal bool AppendHash;
+
         [SerializeField] internal string CopyGroup = String.Empty;
 
         /// <summary>

@@ -190,8 +190,8 @@ namespace NATFrameWork.NatAsset.Editor
             foreach (KeyValuePair<string, BundleManifest> keyValue in bundleDic)
             {
                 targetBundleManifests.Add(keyValue.Value);
-                string sourcePath = Path.Combine(versionInfo.FullName, keyValue.Value.BundlePath);
-                string targetPath = Path.Combine(NatAssetEditorUtil.ReadOnlyPath, keyValue.Value.BundlePath);
+                string sourcePath = Path.Combine(versionInfo.FullName, keyValue.Value.RelativePath);
+                string targetPath = Path.Combine(NatAssetEditorUtil.ReadOnlyPath, keyValue.Value.RelativePath);
                 NatAssetEditorUtil.CopyFileToNewPath(sourcePath, targetPath);
             }
             NatAssetEditorUtil.WriteNatAssetMainfestToFile(Path.Combine(NatAssetEditorUtil.ReadOnlyPath, NatAssetEditorUtil.ConfigName), resultManifest);

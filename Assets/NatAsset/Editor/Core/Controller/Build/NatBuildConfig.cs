@@ -81,8 +81,10 @@ namespace NATFrameWork.NatAsset.Editor
             //生成MD5值
             BuildBundleDicMD5(outPut, bundleBuildInfos);
             //生成配置文件
-            BuildConfigJson(outPut, natBuildParamters.VersionData, natBuildParamters.BuildTarget,
+            NatAssetManifest natAssetManifest = BuildConfigJson(outPut, natBuildParamters.VersionData, natBuildParamters.BuildTarget,
                 bundleBuildInfos);
+            //重命名文件
+            BuildRenameAB(outPut ,natAssetManifest);
             stopwatch.Stop();
             UnityEngine.Debug.LogFormat("NatAsset-{0}资源打包成功，耗时：{1}h{2}m{3}s", natBuildParamters.BuildTarget,
                 stopwatch.Elapsed.Hours,
@@ -100,7 +102,7 @@ namespace NATFrameWork.NatAsset.Editor
         /// <param name="IsVersion"></param>
         /// <param name="validBuildTarget"></param>
         /// <param name="bundleInventoryBuilds"></param>
-        private static void BuildConfigJson(string outPutPath, VersionData buildVersion,
+        private static NatAssetManifest BuildConfigJson(string outPutPath, VersionData buildVersion,
             ValidBuildTarget validBuildTarget,
             Dictionary<string, BundleBuildInfo> bundleInventoryBuilds)
         {
@@ -171,7 +173,29 @@ namespace NATFrameWork.NatAsset.Editor
                 sw.Close();
             }
 
+            return natAssetMainfest;
+
             #endregion
+        }
+
+        private static void BuildRenameAB(string outPut, NatAssetManifest natAssetManifest)
+        {
+            if (natAssetManifest == null)
+                return;
+            List<BundleManifest> bundleManifests = natAssetManifest.BundleManifests;
+            if(bundleManifests != null)
+            {
+                for (int i = 0; i < bundleManifests.Count; i++)
+                {
+                    BundleManifest bundleManifest = bundleManifests[i];
+                    if (bundleManifest.IsAppendHash)
+                    {
+                        string oldPath = Path.Combine(outPut, bundleManifest.BundlePath);
+                        string newPath = Path.Combine(outPut, bundleManifest.RelativePath);
+                        File.Move(oldPath, newPath);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -199,6 +223,7 @@ namespace NATFrameWork.NatAsset.Editor
             temp.Group = data.BundleGroup;
             temp.IsRaw = false;
             temp.Dependencies = Mainfest.GetDirectDependencies(data.BundlePath);
+            temp.IsAppendHash = NatAssetEditorUtil.AppendHash;
             temp.BundleEncrypt = NatAssetEditorUtil.SwitchBundleEncrypt(data.BundleEncrypt);
             List<AssetManifest> assets = new List<AssetManifest>();
             BuildAssetMainfest(data, assets, excludeList);

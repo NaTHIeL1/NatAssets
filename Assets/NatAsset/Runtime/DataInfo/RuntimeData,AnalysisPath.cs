@@ -13,15 +13,16 @@ namespace NATFrameWork.NatAsset.Runtime
         /// <returns></returns>
         internal static string GetRuntimeLoadPath(string bundleName)
         {
+            string realLoadPath = GetBundleRelativePath(bundleName);
 #if UNITY_EDITOR
-            return Path.Combine(NatAssetSetting.EditorLoadPath, bundleName);
+            return Path.Combine(NatAssetSetting.EditorLoadPath, realLoadPath);
 #endif
             switch (GetBundleLoadPath(bundleName))
             {
                 case LoadPath.ReadOnly:
-                    return Path.Combine(NatAssetSetting.ReadOnlyPath, bundleName);
+                    return Path.Combine(NatAssetSetting.ReadOnlyPath, realLoadPath);
                 case LoadPath.ReadWrite:
-                    return Path.Combine(NatAssetSetting.ReadWritePath, bundleName);
+                    return Path.Combine(NatAssetSetting.ReadWritePath, realLoadPath);
                 default: return null;
             }
         }
@@ -51,7 +52,7 @@ namespace NATFrameWork.NatAsset.Runtime
             //    return;
             //}
             AssetManifest assetManifest = GetAssetManifest(path);
-            if(assetManifest != null)
+            if (assetManifest != null)
             {
                 bundleName = assetManifest.BundleName;
                 resName = assetManifest.AssetName;

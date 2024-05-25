@@ -138,6 +138,12 @@ namespace NATFrameWork.NatAsset.Editor
             return false;
         }
 
+        internal static bool AppendHash
+        {
+            get { return NatAssetBuildSetting.Instance.AppendHash; }
+            set { NatAssetBuildSetting.Instance.AppendHash = value; }
+        }
+
         internal static CompressOptions BuildCompression
         {
             get { return NatAssetBuildSetting.Instance.BuildCompression; }

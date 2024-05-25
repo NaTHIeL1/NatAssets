@@ -250,6 +250,14 @@ namespace NATFrameWork.NatAsset.Runtime
             return LoadPath.ReadOnly;
         }
 
+        internal static string GetBundleRelativePath(string bundlePath)
+        {
+            BundleManifest manifest = null;
+            if (_manifestLoader != null)
+                manifest = _manifestLoader.GetBundleManifest(bundlePath);
+            return manifest == null ? bundlePath : manifest.RelativePath;
+        }
+
         internal static Hash128 GetAssetBundleHash(string bundlePath)
         {
             BundleManifest manifest = null;
