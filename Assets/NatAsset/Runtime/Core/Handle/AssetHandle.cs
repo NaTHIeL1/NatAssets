@@ -65,6 +65,10 @@ namespace NATFrameWork.NatAsset.Runtime
             }
         }
 
+        protected override bool CanBeReference()
+        {
+            return false;
+        }
 
         protected override void OnUnLoad()
         {

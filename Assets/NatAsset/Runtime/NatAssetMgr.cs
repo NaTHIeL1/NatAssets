@@ -1,5 +1,5 @@
 ﻿using System;
-using Cysharp.Threading.Tasks;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
@@ -83,7 +83,27 @@ namespace NATFrameWork.NatAsset.Runtime
         /// </summary>
         /// <param name="targetPath"></param>
         /// <returns></returns>
-        public static async UniTask<GameObject> InstanceObjAsync(string targetPath, Priority priority = Priority.Low)
+        public static async void InstanceObjAsync(string targetPath, Action<GameObject> callback = null, Priority priority = Priority.Low)
+        {
+            AssetHandle handle = await LoadAssetAsync(targetPath, typeof(GameObject), priority);
+            if (handle.IsSuccess)
+            {
+                GameObject obj = GameObject.Instantiate(handle.Asset as GameObject);
+                handle.OnBind(obj);
+                callback?.Invoke(obj);
+            }
+            else
+            {
+                Debug.LogErrorFormat("{0}资源加载失败", targetPath);
+            }
+        }
+
+        /// <summary>
+        /// 实例化方法自动绑定物体
+        /// </summary>
+        /// <param name="targetPath"></param>
+        /// <returns></returns>
+        public static async Task<GameObject> InstanceObjAsync(string targetPath, Priority priority = Priority.Low)
         {
             AssetHandle handle = await LoadAssetAsync(targetPath, typeof(GameObject), priority);
             if (handle.IsSuccess)

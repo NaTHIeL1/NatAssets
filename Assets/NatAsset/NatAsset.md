@@ -1,6 +1,7 @@
 # 介绍
-+ NatAsset是一个unity资源管理框架，目前处于开发状态，框架采用引用计数管理资源卸载，支持同步异步加载资源，仅支持SBP构建，目前build-in模式存在问题后续计划移除build-in模块，该框架为个人学习框架，可作为学习参考。
++ NatAsset是一个unity资源管理框架，目前处于开发状态，框架采用引用计数管理资源卸载，支持同步异步加载资源，支持build-in或SBP构建，目前build-in模式存在问题后续计划移除build-in模块，该框架为个人学习框架，可作为学习参考。
 # 注意事项
++ 在该框架中使用了UniTask库，想要运行该框架需再下载一个UniTask库。
 + 目前在框架中的资源延迟卸载时间为60s，Bundle延迟卸载时间为60s，每帧任务最大运行数量为50个。目前无法修改。
 + 支持PC（使用streamingAssets目录）、安卓（默认streamingAssets目录）
 + IOS未测试；WebGL未适配。
@@ -126,7 +127,7 @@ public void BindSprite(AssetHandle assetHandle)
 + 异步以及同步实例化资源接口(GameObject)，该接口会自定绑定物体的生命周期，当物体销毁时自行进行句柄卸载
 ``` c#
 NatAssetMgr.InstanceObj(string targetPath)
-NatAssetMgr.InstanceObjAsync(string targetPath，Action<GameObject> callback)
+NatAssetMgr.InstanceObjAsync(string targetPath)
 ```
 
 #### 卸载
