@@ -29,15 +29,15 @@ namespace NATFrameWork.NatAsset.Runtime
             {
                 string bundleName = TaskGUID;
                 string loadPath = RuntimeData.GetRuntimeLoadPath(bundleName);
+                uint crc = NatAssetSetting.UseCRC ? RuntimeData.GetBundleCRC(bundleName) : 0u;
                 if (RunModel == RunModel.Async)
                 {
                     BundleEncrypt bundleEncrypt = RuntimeData.GetBundleEncrypt(bundleName);
                     if (bundleEncrypt == BundleEncrypt.Nono)
                         _bundleCreateRequest =
-                            AssetBundle.LoadFromFileAsync(loadPath, RuntimeData.GetBundleCRC(bundleName));
+                            AssetBundle.LoadFromFileAsync(loadPath, crc);
                     else if (bundleEncrypt == BundleEncrypt.Offset)
-                        _bundleCreateRequest = AssetBundle.LoadFromFileAsync(loadPath,
-                            RuntimeData.GetBundleCRC(bundleName), EncryptionUtil.EncryptOffset);
+                        _bundleCreateRequest = AssetBundle.LoadFromFileAsync(loadPath, crc, EncryptionUtil.EncryptOffset);
                     _bundleCreateRequest.priority = (int)TaskPriority;
                     SetTaskState(TaskState.Running);
                 }
@@ -46,10 +46,9 @@ namespace NATFrameWork.NatAsset.Runtime
                     //同步逻辑
                     BundleEncrypt bundleEncrypt = RuntimeData.GetBundleEncrypt(bundleName);
                     if (bundleEncrypt == BundleEncrypt.Nono)
-                        _assetBundle = AssetBundle.LoadFromFile(loadPath, RuntimeData.GetBundleCRC(bundleName));
+                        _assetBundle = AssetBundle.LoadFromFile(loadPath, crc);
                     else if (bundleEncrypt == BundleEncrypt.Offset)
-                        _assetBundle = AssetBundle.LoadFromFile(loadPath, RuntimeData.GetBundleCRC(bundleName),
-                            EncryptionUtil.EncryptOffset);
+                        _assetBundle = AssetBundle.LoadFromFile(loadPath, crc, EncryptionUtil.EncryptOffset);
                     SetTaskState(TaskState.Finish);
                 }
             }

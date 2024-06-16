@@ -43,7 +43,7 @@ namespace NATFrameWork.NatAsset.Runtime
             T task = ReferencePool.Get<T>();
             task.TaskGUID = name;
             task.TaskID = task.GetHashCode();
-            if (name == string.Empty)
+            if (string.IsNullOrEmpty(name))
                 task.TaskGUID = task.TaskID.ToString();
             task.Progress = 0;
             task.CreateTime = DateTime.Now.ToUniversalTime().Ticks;

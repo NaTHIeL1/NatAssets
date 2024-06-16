@@ -10,7 +10,8 @@ namespace NATFrameWork.NatAsset.Runtime
     {
         public string BundlePath;
         //资源组
-        public string Group;
+        public string MainGroup;
+        public List<string> Groups;
         public string MD5;
         public string Hash;
         public uint CRC;
@@ -53,11 +54,69 @@ namespace NATFrameWork.NatAsset.Runtime
                 return _relativePath;
             }
         }
+
+        /// <summary>
+        /// 检查AB是否一致
+        /// </summary>
+        /// <param name="remoteManifest"></param>
+        /// <returns></returns>
+        public bool EquipABVersion(BundleManifest remoteManifest)
+        {
+            if(remoteManifest != null)
+            {
+                if (BundlePath.Equals(remoteManifest.BundlePath) 
+                    && Hash.Equals(remoteManifest.Hash)
+                    && Length == remoteManifest.Length
+                    && MD5.Equals(remoteManifest.MD5))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 由于获取的bundle的全部依赖，可能依赖的bundle产生依赖变化，所以保险起见检查依赖是否需要更新
+        /// </summary>
+        /// <param name="remoteManifest"></param>
+        /// <returns></returns>
+        public bool NeedUpdateManifest(BundleManifest remoteManifest)
+        {
+            if(remoteManifest != null && BundlePath.Equals(remoteManifest.BundlePath))
+            {
+                if (!MainGroup.Equals(remoteManifest.MainGroup))
+                    return true;
+                if(Groups.Count != remoteManifest.Groups.Count)
+                    return true;
+                if (Dependencies.Length != remoteManifest.Dependencies.Length)
+                    return true;
+                for (int i = 0; i < Groups.Count; i++)
+                {
+                    if (!Groups[i].Equals(remoteManifest.Groups[i]))
+                    {
+                        return true;
+                    }
+                }
+                for (int i = 0; i < Dependencies.Length; i++)
+                {
+                    if (!Dependencies[i].Equals(remoteManifest.Dependencies[i]))
+                        return true;
+                }
+            }
+            return false;
+        }
         
         public void SerializeToBinary(BinaryWriter bw)
         {
             bw.Write(BundlePath);
-            bw.Write(Group);
+            bw.Write(MainGroup);
+
+            bw.Write(Groups.Count);
+            for(int i = 0; i < Groups.Count; i++)
+            {
+                bw.Write(Groups[i]);
+            }
+
             bw.Write(MD5);
             bw.Write(Hash);
             bw.Write(CRC);
@@ -82,7 +141,15 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             BundleManifest bundleManifest = new BundleManifest();
             bundleManifest.BundlePath = br.ReadString();
-            bundleManifest.Group = br.ReadString();
+            bundleManifest.MainGroup = br.ReadString();
+
+            int groupCount = br.ReadInt32();
+            bundleManifest.Groups = new List<string>(groupCount);
+            for (int i = 0; i < groupCount; i++)
+            {
+                bundleManifest.Groups.Add(br.ReadString());
+            }
+
             bundleManifest.MD5 = br.ReadString();
             bundleManifest.Hash = br.ReadString();
             bundleManifest.CRC = br.ReadUInt32();
@@ -90,6 +157,7 @@ namespace NATFrameWork.NatAsset.Runtime
             bundleManifest.IsAppendHash = br.ReadBoolean();
             bundleManifest.Length = br.ReadUInt64();
             bundleManifest.BundleEncrypt = (BundleEncrypt)br.ReadByte();
+
             int count = br.ReadInt32();
             bundleManifest.Dependencies = new string[count];
             for (int i = 0; i < count; i++)

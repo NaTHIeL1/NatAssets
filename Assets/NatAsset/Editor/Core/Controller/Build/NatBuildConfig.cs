@@ -118,16 +118,22 @@ namespace NATFrameWork.NatAsset.Editor
             //获取要排除的所有目标文件夹
             List<string> excludeFilePaths = ReflectBuild.ReflectExcludeFileExtension();
 
+            List<string> groupList = new List<string>();
+            natAssetMainfest.IncludeGroups = groupList;
+
             natAssetMainfest.BundleManifests = new List<BundleManifest>();
             List<BundleManifest> bundleList = natAssetMainfest.BundleManifests;
 
+            //初步生成bundleManifest
             Dictionary<string, BundleManifest> tempBundleManifestDic = new Dictionary<string, BundleManifest>();
             foreach (var keyValue in bundleInventoryBuilds)
             {
                 BundleBuildInfo data = keyValue.Value;
-                BundleManifest temp = BuildBundleItemNode(data, excludeFilePaths);
                 if (!tempBundleManifestDic.ContainsKey(data.BundlePath))
+                {
+                    BundleManifest temp = BuildBundleItemNode(data, excludeFilePaths);
                     tempBundleManifestDic.Add(data.BundlePath, temp);
+                }
                 string[] dependBundles = Mainfest.GetAllDependencies(data.BundlePath);
                 for (int i = 0; i < dependBundles.Length; i++)
                 {
@@ -145,9 +151,41 @@ namespace NATFrameWork.NatAsset.Editor
                 }
             }
 
+
+            HashSet<string> hashGroups = new HashSet<string>();
+            //分析并完善bundle所属资源组
+            foreach (KeyValuePair<string, BundleManifest> bundleManifest in tempBundleManifestDic)
+            {
+                //收集group
+                hashGroups.Clear();
+                BundleManifest tempManifest = bundleManifest.Value;
+                hashGroups.Add(tempManifest.MainGroup);
+                string[] dependences = tempManifest.Dependencies;
+                for(int i = 0;i < dependences.Length; i++)
+                {
+                    if (tempBundleManifestDic.TryGetValue(dependences[i], out BundleManifest manifest))
+                    {
+                        hashGroups.Add(manifest.MainGroup);
+                    }
+                }
+                //填入group数据
+                List<string> groups = new List<string>();
+                foreach(var groupName in hashGroups)
+                {
+                    groups.Add(groupName);
+                }
+                groups.Sort();
+                tempManifest.Groups = groups;
+            }
+
+
             foreach (KeyValuePair<string, BundleManifest> bundleManifest in tempBundleManifestDic)
             {
                 bundleList.Add(bundleManifest.Value);
+                if(!groupList.Contains(bundleManifest.Value.MainGroup))
+                {
+                    groupList.Add(bundleManifest.Value.MainGroup);
+                }
             }
 
             #endregion
@@ -220,9 +258,11 @@ namespace NATFrameWork.NatAsset.Editor
 #endif
             temp.Hash = Mainfest.GetAssetBundleHash(data.BundlePath).ToString();
             //todo:bundleGroup修改
-            temp.Group = data.BundleGroup;
+            temp.MainGroup = data.BundleGroup;
             temp.IsRaw = false;
-            temp.Dependencies = Mainfest.GetDirectDependencies(data.BundlePath);
+            string[] dependence = Mainfest.GetAllDependencies(data.BundlePath);
+            Array.Sort(dependence);
+            temp.Dependencies = dependence;
             temp.IsAppendHash = NatAssetEditorUtil.AppendHash;
             temp.BundleEncrypt = NatAssetEditorUtil.SwitchBundleEncrypt(data.BundleEncrypt);
             List<AssetManifest> assets = new List<AssetManifest>();
@@ -270,6 +310,7 @@ namespace NATFrameWork.NatAsset.Editor
                 BundleBuildInfo item = buildInfos[i];
                 outPutDic.Add(item.BundlePath, item);
             }
+            //SBP特殊构建BuildInShader.bundle清单星系
 #if NATASSET_SBP_SUPPORT
             BundleBuildInfo build = new BundleBuildInfo("Assets", "", "Base", EditorBundleEncrypt.Global);
             build.CompletePath = string.Empty;

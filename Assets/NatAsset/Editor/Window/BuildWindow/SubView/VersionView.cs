@@ -155,10 +155,16 @@ namespace NATFrameWork.NatAsset.Editor
             //构建目标配置文件
             NatAssetManifest resultManifest = new NatAssetManifest();
             List<BundleManifest> targetBundleManifests = new List<BundleManifest>();
+            List<string> listGroups = new List<string>();
+            for(int i = 0; i <groups.Length; i++)
+            {
+                listGroups.Add(groups[i]);
+            }
             resultManifest.NatAssetVersion = versionManifest.NatAssetVersion;
             resultManifest.BuildVersion = versionManifest.BuildVersion;
             resultManifest.ReleaseVersion = versionManifest.ReleaseVersion;
             resultManifest.Platform = versionManifest.Platform;
+            resultManifest.IncludeGroups = listGroups;
             resultManifest.BundleManifests = targetBundleManifests;
             
             Dictionary<string, BundleManifest> bundleDic = new Dictionary<string, BundleManifest>();
@@ -168,7 +174,7 @@ namespace NATFrameWork.NatAsset.Editor
                 string group = groups[i];
                 foreach (BundleManifest bundleManifest in versionBundleManifest)
                 {
-                    if (bundleManifest.Group == group)
+                    if (bundleManifest.MainGroup == group)
                     {
                         if (!bundleDic.ContainsKey(bundleManifest.BundlePath))
                         {

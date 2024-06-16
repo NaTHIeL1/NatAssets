@@ -58,9 +58,9 @@ namespace NATFrameWork.NatAsset.Runtime
 
         private static void InitTaskRunner()
         {
-            _loadTaskRunner.InitTaskRunner(NatAssetSetting.TaskFrameLimit);
-            _netLoadTaskRunner.InitTaskRunner(NatAssetSetting.TaskFrameLimit);
-            _unLoadTaskRunner.InitTaskRunner(NatAssetSetting.TaskFrameLimit);
+            _loadTaskRunner.InitTaskRunner(NatAssetSetting.TaskFrameLimitLoaded);
+            _netLoadTaskRunner.InitTaskRunner(NatAssetSetting.TaskFrameLimitNetLoad);
+            _unLoadTaskRunner.InitTaskRunner(NatAssetSetting.TaskFrameLimitUnLoad);
         }
 
         private static void UpdateTaskRunner()

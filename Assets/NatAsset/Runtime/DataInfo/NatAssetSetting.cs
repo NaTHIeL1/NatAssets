@@ -2,11 +2,15 @@
 {
     public static class NatAssetSetting
     {
-        public static int BundleDelayTime { get; internal set; } = 120;
-        public static int AssetDelayTime { get; internal set; } = 60;
-        public static int TaskFrameLimit { get; internal set; } = 50;
+        //todo:后续参数开放为外部可用
+        public static int BundleDelayTime { get; set; } = 120;
+        public static int AssetDelayTime { get; set; } = 60;
+        public static int TaskFrameLimitLoaded { get; set; } = 50;
+        public static int TaskFrameLimitUnLoad { get; set; } = 50;
+        public static int TaskFrameLimitNetLoad { get; set; } = 50;
 
-        public static bool WebGLIsUseCache { get; internal set; } = true;
+        public static bool WebGLIsUseCache { get; set; } = true;
+        public static bool UseCRC { get; set; } = true;
         
         internal static RunWay TRunWay;
 

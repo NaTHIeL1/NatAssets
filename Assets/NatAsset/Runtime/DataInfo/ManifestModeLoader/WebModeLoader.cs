@@ -8,9 +8,11 @@ namespace NATFrameWork.NatAsset.Runtime
 {
     public class WebModeLoader : BaseManifestModeLoader
     {
+        private string _webTaskGUID1 = string.Empty;
         private string _buildInPath = string.Empty;
         private NatAssetManifest _buildInManifest;
 
+        private string _webTaskGUID2 = string.Empty;
         private string _remotePath = string.Empty;
         private NatAssetManifest _remoteManifest;
 
@@ -20,13 +22,13 @@ namespace NATFrameWork.NatAsset.Runtime
             _record = 0;
             _buildInPath = Path.Combine(BuildInLoadPath, NatAssetSetting.ConfigName);
             _remotePath = Path.Combine(RemotePath, NatAssetSetting.ConfigName);
-            CoreLoaderMgr.SendWebRequest(_buildInPath, Priority.Top, BuildInManifestCallBack, 1);
-            CoreLoaderMgr.SendWebRequest(_remotePath, Priority.Top, RemoteManifestCallBack, 1);
+            _webTaskGUID1 = CoreLoaderMgr.SendWebRequest(_buildInPath, Priority.Top, BuildInManifestCallBack, 1);
+            _webTaskGUID2 = CoreLoaderMgr.SendWebRequest(_remotePath, Priority.Top, RemoteManifestCallBack, 1);
         }
         internal override void StopLoader()
         {
-            CoreLoaderMgr.DisposeWebRequest(_buildInPath);
-            CoreLoaderMgr.DisposeWebRequest(_remotePath);
+            CoreLoaderMgr.DisposeWebRequest(_webTaskGUID1);
+            CoreLoaderMgr.DisposeWebRequest(_webTaskGUID2);
             _buildInManifest = null;
             _remoteManifest = null;
             _buildInPath = string.Empty;
@@ -34,7 +36,7 @@ namespace NATFrameWork.NatAsset.Runtime
             _record = 0;
         }
 
-        private void BuildInManifestCallBack(bool success, UnityWebRequest unityWebRequest)
+        private void BuildInManifestCallBack(string taskId, bool success, UnityWebRequest unityWebRequest)
         {
             _record++;
             if (success)
@@ -49,7 +51,7 @@ namespace NATFrameWork.NatAsset.Runtime
             CheckFinish();
         }
 
-        private void RemoteManifestCallBack(bool success, UnityWebRequest unityWebRequest)
+        private void RemoteManifestCallBack(string taskId, bool success, UnityWebRequest unityWebRequest)
         {
             _record++;
             if (success)

@@ -90,6 +90,19 @@ namespace NATFrameWork.NatAsset.Runtime
             }
         }
 
+        internal void CancelTask(string taskGUID)
+        {
+            if(taskDic.TryGetValue(taskGUID, out BaseTask task))
+            {
+                task.CancelTask();
+                if(task.IsDone)
+                {
+                    RemoveTask(task);
+                    BaseTask.ReleaseTask(task);
+                }
+            }
+        }
+
         /// <summary>
         /// 添加加载任务
         /// </summary>

@@ -57,19 +57,19 @@ namespace NATFrameWork.NatAsset.Runtime
             return _localLoader.LoadSceneAsync(path, loadSceneMode, priority);
         }
 
-        internal static void SendWebRequest(string url, Priority priority, Action<bool, UnityWebRequest> callback, int retryCount = -1)
+        internal static string SendWebRequest(string url, Priority priority, Action<string, bool, UnityWebRequest> callback, int retryCount = -1)
         {
             WebRequestTask webRequestTask = WebRequestTask.Create(url, priority, callback, retryCount);
             TaskSystem.NetLoadTaskRunner.AddTask(webRequestTask);
+            return webRequestTask.TaskGUID;
         }
 
-        internal static void DisposeWebRequest(string url)
+        internal static void DisposeWebRequest(string taskGUID)
         {
+            if (string.IsNullOrEmpty(taskGUID))
+                return;
             TaskRunner taskRunner = TaskSystem.NetLoadTaskRunner;
-            if(taskRunner != null && taskRunner.TryGetValue(url, out BaseTask baseTask))
-            {
-                taskRunner.RemoveTask(baseTask);
-            }
+            taskRunner.CancelTask(taskGUID);
         }
 
         private static void SetLoader()

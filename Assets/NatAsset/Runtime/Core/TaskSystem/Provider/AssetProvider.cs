@@ -16,7 +16,7 @@ namespace NATFrameWork.NatAsset.Runtime
             _localLoadRunner = TaskSystem.LoadTaskRunner;
             RuntimeData.GetBundlePath(ProviderGUID, out _bundleName, out _assetName);
             //todo:后续改为通过资源名获取资源依赖的bundle
-            _dependenceBundles = RuntimeData.GetDirectDependencies(_bundleName);
+            _dependenceBundles = RuntimeData.GetAllDependencies(_bundleName);
         }
 
         internal override void OnUpdate()

@@ -6,12 +6,13 @@ namespace NATFrameWork.NatAsset.Runtime
 {
     internal class WebRequestTask : BaseTask
     {
+        private static uint _webTaskGUID = 0;
         private string _url;
         private int _maxRetryCount = 3;
         private int _retryCount = 0;
         private UnityWebRequest _webRequest;
         private UnityWebRequestAsyncOperation _operation;
-        private Action<bool, UnityWebRequest> _callback;
+        private Action<string, bool, UnityWebRequest> _callback;
 
         public override float Progress
         {
@@ -24,9 +25,11 @@ namespace NATFrameWork.NatAsset.Runtime
             protected set => base.Progress = value;
         }
 
-        internal static WebRequestTask Create(string url, Priority priority, Action<bool, UnityWebRequest> callback, int retryCount = -1)
+        internal static WebRequestTask Create(string url, Priority priority, Action<string, bool, UnityWebRequest> callback, int retryCount = -1)
         {
             WebRequestTask webRequestTask = WebRequestTask.CreateTask<WebRequestTask>(string.Empty, priority);
+            //重新指定GUID
+            webRequestTask.TaskGUID = (++_webTaskGUID).ToString();
             webRequestTask._callback = callback;
             webRequestTask._url = url;
             if(retryCount > 0 )
@@ -58,7 +61,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 {
                     if (_webRequest.result == UnityWebRequest.Result.Success)
                     {
-                        _callback(true, _webRequest);
+                        _callback(TaskGUID, true, _webRequest);
                         SetTaskState(TaskState.End);
                     }
                     else
@@ -66,7 +69,7 @@ namespace NATFrameWork.NatAsset.Runtime
                         //重新发起请求
                         if (!TryToReSend())
                         {
-                            _callback(false, _webRequest);
+                            _callback(TaskGUID,false, _webRequest);
                             SetTaskState(TaskState.End);
                         }
                     }

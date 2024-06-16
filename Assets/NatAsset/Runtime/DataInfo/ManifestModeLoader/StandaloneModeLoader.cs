@@ -7,16 +7,17 @@ namespace NATFrameWork.NatAsset.Runtime
 {
     public class StandaloneModeLoader : BaseManifestModeLoader
     {
+        private string _webTaskGUID = string.Empty;
         private string _buildInPath = string.Empty;
         private NatAssetManifest _buildInManifest;
         
         internal override void StartLoader()
         {
             _buildInPath = Path.Combine(BuildInLoadPath, NatAssetSetting.ConfigName);
-            CoreLoaderMgr.SendWebRequest(_buildInPath, Priority.Top, CallBack);
+            _webTaskGUID = CoreLoaderMgr.SendWebRequest(_buildInPath, Priority.Top, CallBack);
         }
 
-        private void CallBack(bool success, UnityWebRequest unityWebRequest)
+        private void CallBack(string taskId, bool success, UnityWebRequest unityWebRequest)
         {
             if(success)
             {
@@ -35,7 +36,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal override void StopLoader()
         {
             //不论如何确保停止了该任务
-            CoreLoaderMgr.DisposeWebRequest(_buildInPath);
+            CoreLoaderMgr.DisposeWebRequest(_webTaskGUID);
             _buildInPath = string.Empty;
             _buildInManifest = null;
         }

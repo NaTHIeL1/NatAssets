@@ -57,7 +57,7 @@ namespace NATFrameWork.NatAsset.Runtime
             CoreLoaderMgr.SendWebRequest(readWritePath, Priority.Top, ReadWriteManifestCallback, 1);
         }
 
-        private static void BuildInManifestCallBack(bool success, UnityWebRequest unityWebRequest)
+        private static void BuildInManifestCallBack(string taskId, bool success, UnityWebRequest unityWebRequest)
         {
             _loadCount++;
             if (success)
@@ -71,7 +71,7 @@ namespace NATFrameWork.NatAsset.Runtime
             CheckAllManifestHasLoad();
         }
 
-        private static void ReadWriteManifestCallback(bool success, UnityWebRequest unityWebRequest)
+        private static void ReadWriteManifestCallback(string taskId, bool success, UnityWebRequest unityWebRequest)
         {
             _loadCount++;
             if (success)

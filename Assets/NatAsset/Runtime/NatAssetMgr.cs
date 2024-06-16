@@ -8,6 +8,9 @@ namespace NATFrameWork.NatAsset.Runtime
 {
     public static class NatAssetMgr
     {
+        /// <summary>
+        /// 设置资源更新URL
+        /// </summary>
         public static string UpdateURLAddress 
         {
             get => NatAssetSetting.AssetServerURL;
@@ -151,10 +154,27 @@ namespace NATFrameWork.NatAsset.Runtime
             sceneHandle.Unload();
         }
 
-        public static void SendWebRequest(string url, Action<bool, UnityWebRequest> callback,
-            Priority priority = Priority.Low, int retryCount = -1)
-        {
-            CoreLoaderMgr.SendWebRequest(url, priority, callback, retryCount);
-        }
+        ///// <summary>
+        ///// webRequest加载
+        ///// </summary>
+        ///// <param name="url"></param>
+        ///// <param name="callback"></param>
+        ///// <param name="priority"></param>
+        ///// <param name="retryCount"></param>
+        ///// <returns>返回该任务唯一GUID，用于取消加载</returns>
+        //public static string SendWebRequest(string url, Action<bool, UnityWebRequest> callback,
+        //    Priority priority = Priority.Low, int retryCount = -1)
+        //{
+        //    return CoreLoaderMgr.SendWebRequest(url, priority, callback, retryCount);
+        //}
+
+        ///// <summary>
+        ///// 取消webrequest加载
+        ///// </summary>
+        ///// <param name="taskGuid"></param>
+        //public static void DisposeWebRequest(string taskGuid)
+        //{
+        //    CoreLoaderMgr.DisposeWebRequest(taskGuid);
+        //}
     }
 }

@@ -132,7 +132,7 @@ namespace NATFrameWork.NatAsset.Runtime
                     targetGroup.Add(bundlePath);
             }
 
-            if (targetGroup.TryGetValue(bundleManifest.Group, out List<string> bundles))
+            if (targetGroup.TryGetValue(bundleManifest.MainGroup, out List<string> bundles))
             {
                 if (!bundles.Contains(bundleManifest.BundlePath))
                 {
@@ -154,7 +154,7 @@ namespace NATFrameWork.NatAsset.Runtime
             else
             {
                 List<string> bundleList = new List<string>();
-                targetGroup.Add(bundleManifest.Group, bundleList);
+                targetGroup.Add(bundleManifest.MainGroup, bundleList);
                 AddBundlePathToGroup(bundleList, bundleManifest.BundlePath);
                 string[] dependenceList = bundleManifest.Dependencies;
                 if (dependenceList != null)
@@ -210,7 +210,7 @@ namespace NATFrameWork.NatAsset.Runtime
             return null;
         }
 
-        internal static string[] GetDirectDependencies(string bundlePath)
+        internal static string[] GetAllDependencies(string bundlePath)
         {
             BundleManifest manifest = null;
             if (_manifestLoader != null)

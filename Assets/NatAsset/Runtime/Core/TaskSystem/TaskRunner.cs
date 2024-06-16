@@ -111,11 +111,27 @@ namespace NATFrameWork.NatAsset.Runtime
             return false;
         }
 
+        /// <summary>
+        /// 取消全部任务
+        /// </summary>
         internal void CancelAllTask()
         {
             for (int i = _taskGroups.Count - 1; i >= 0; i--)
             {
                 _taskGroups[i].CancelAllTask();
+            }
+        }
+
+        /// <summary>
+        /// 取消指定任务
+        /// </summary>
+        /// <param name=""></param>
+        internal void CancelTask(string taskGUID)
+        {
+            //因为不知道属于哪个优先级所以全部遍历
+            for(int i = 0;i< _taskGroups.Count; i++)
+            {
+                _taskGroups[i].CancelTask(taskGUID);
             }
         }
 

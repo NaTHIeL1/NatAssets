@@ -8,9 +8,11 @@ namespace NATFrameWork.NatAsset.Runtime
 {
     public class HostModeLoader : BaseManifestModeLoader
     {
+        private string _taskGUID1 = string.Empty;
         private string _buildInPath = string.Empty;
         private NatAssetManifest _buildInManifest;
 
+        private string _taskGUID2 = string.Empty;
         private string _readWritePath = string.Empty;
         private NatAssetManifest _readWriteManifest;
 
@@ -21,14 +23,14 @@ namespace NATFrameWork.NatAsset.Runtime
             _record = 0;
             _buildInPath = Path.Combine(BuildInLoadPath, NatAssetSetting.ConfigName);
             _readWritePath = Path.Combine(ReadWriteLoadPath, NatAssetSetting.ConfigName);
-            CoreLoaderMgr.SendWebRequest(_buildInPath, Priority.Top, BuildInCallBack);
-            CoreLoaderMgr.SendWebRequest(_readWritePath, Priority.Top, ReadWriteCallBack);
+            _taskGUID1 = CoreLoaderMgr.SendWebRequest(_buildInPath, Priority.Top, BuildInCallBack);
+            _taskGUID2 = CoreLoaderMgr.SendWebRequest(_readWritePath, Priority.Top, ReadWriteCallBack);
         }
 
         internal override void StopLoader()
         {
-            CoreLoaderMgr.DisposeWebRequest(_buildInPath);
-            CoreLoaderMgr.DisposeWebRequest(_readWritePath);
+            CoreLoaderMgr.DisposeWebRequest(_taskGUID1);
+            CoreLoaderMgr.DisposeWebRequest(_taskGUID2);
             _buildInManifest = null;
             _readWriteManifest = null;
             _buildInPath = string.Empty;
@@ -36,7 +38,7 @@ namespace NATFrameWork.NatAsset.Runtime
             _record = 0;
         }
 
-        private void BuildInCallBack(bool success, UnityWebRequest unityWebRequest)
+        private void BuildInCallBack(string taskId, bool success, UnityWebRequest unityWebRequest)
         {
             _record++;
             if (success)
@@ -51,7 +53,7 @@ namespace NATFrameWork.NatAsset.Runtime
             CheckFinish();
         }
 
-        private void ReadWriteCallBack(bool success, UnityWebRequest unityWebRequest)
+        private void ReadWriteCallBack(string taskId, bool success, UnityWebRequest unityWebRequest)
         {
             _record++;
             if (success)

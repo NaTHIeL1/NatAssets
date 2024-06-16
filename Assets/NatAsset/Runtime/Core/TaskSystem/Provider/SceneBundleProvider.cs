@@ -32,7 +32,7 @@ namespace NATFrameWork.NatAsset.Runtime
             _loadSceneMode = loadSceneMode;
             _scenePath = scenePath;
             RuntimeData.GetBundleScenePath(_scenePath, out _bundleName, out _sceneName);
-            _depBundles = RuntimeData.GetDirectDependencies(_bundleName);
+            _depBundles = RuntimeData.GetAllDependencies(_bundleName);
         }
 
         internal override void OnUpdate()

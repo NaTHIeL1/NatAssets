@@ -15,6 +15,7 @@ namespace NATFrameWork.NatAsset.Runtime
         public string BuildVersion;
         public string ReleaseVersion;
         public string Platform;
+        public List<string> IncludeGroups;
         public List<BundleManifest> BundleManifests;
         [NonSerialized]
         public Dictionary<string, AssetManifest> AssetManifestDic;
@@ -74,6 +75,11 @@ namespace NATFrameWork.NatAsset.Runtime
                     bw.Write(BuildVersion);
                     bw.Write(ReleaseVersion);
                     bw.Write(Platform);
+                    bw.Write(IncludeGroups.Count);
+                    for(int i = 0; i < IncludeGroups.Count; i++)
+                    {
+                        bw.Write(IncludeGroups[i]);
+                    }
                     bw.Write(BundleManifests.Count);
                     for (int i = 0; i < BundleManifests.Count; i++)
                     {
@@ -94,6 +100,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 {
                     NatAssetManifest natAssetManifest = new NatAssetManifest();
                     natAssetManifest.BundleManifests = new List<BundleManifest>();
+                    natAssetManifest.IncludeGroups = new List<string>();
                     natAssetManifest.NatAssetVersion = br.ReadInt32();
                     natAssetManifest.BuildVersion = br.ReadString();
                     natAssetManifest.ReleaseVersion = br.ReadString();
@@ -104,7 +111,11 @@ namespace NATFrameWork.NatAsset.Runtime
                             $"NatAsset配置文件版本号{natAssetManifest.NatAssetVersion}无法匹配当前代码版本{NatAssetSetting.NatAssetVersion}");
                         return null;
                     }
-
+                    int groupCount = br.ReadInt32();
+                    for(int i = 0; i < groupCount; i++)
+                    {
+                        natAssetManifest.IncludeGroups.Add(br.ReadString());
+                    }
                     int count = br.ReadInt32();
                     for (int i = 0; i < count; i++)
                     {
