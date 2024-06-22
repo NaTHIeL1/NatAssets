@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
@@ -12,10 +11,6 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             RuntimeData.CompleteCallBack += callback;
             CoreLoaderMgr.Init(modelLoader);
-            //if (RuntimeData.NatAssetState == NatAssetState.Inited)
-            //    callback?.Invoke();
-            //else
-            //    RuntimeData.CompleteCallBack += callback;
         }
 
         //执行任务加载器循环
@@ -34,8 +29,7 @@ namespace NATFrameWork.NatAsset.Runtime
         /// </summary>
         public static void ImmediateUnLoadUnUseAsset()
         {
-            //TaskRunner.ImmediateFreeMemory();
-            //todo:
+            TaskSystem.FreeUnUseAsset();
         }
         
         /// <summary>
@@ -71,14 +65,5 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             return RuntimeData.CheckHasBundle(bundlePath);
         }
-
-        /// <summary>
-        /// 获取自定义bundle数据格式
-        /// </summary>
-        /// <returns></returns>
-        //public static JSONNode GetCustomData()
-        //{
-        //    return RuntimeData.GetCustomData();
-        //}
     }
 }

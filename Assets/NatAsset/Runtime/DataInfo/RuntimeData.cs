@@ -25,9 +25,14 @@ namespace NATFrameWork.NatAsset.Runtime
 
         private static NatAssetState _natAssetState = NatAssetState.Waiting;
 
-        public static NatAssetState NatAssetState
+        internal static NatAssetState NatAssetState
         {
             get { return _natAssetState; }
+        }
+
+        internal static void SetNatAssetState(NatAssetState natAssetState)
+        {
+            _natAssetState = natAssetState;
         }
 
         private static bool CanInit => NatAssetState != NatAssetState.Release;
@@ -35,7 +40,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal static void Init(BaseManifestModeLoader modelLoader)
         {
             _manifestLoader = modelLoader;
-            _natAssetState = NatAssetState.Waiting;
+            SetNatAssetState(NatAssetState.Waiting);
 #if UNITY_EDITOR
             switch (NatAssetSetting.TRunWay)
             {
@@ -73,12 +78,12 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             if (!CanInit)
             {
-                if (_natAssetState == NatAssetState.Release)
+                if (NatAssetState == NatAssetState.Release)
                     CompleteCallBack = null;
                 return;
             }
 
-            _natAssetState = NatAssetState.Inited;
+            SetNatAssetState(NatAssetState.Inited);
             CompleteCallBack?.Invoke();
             CompleteCallBack = null;
         }
@@ -86,7 +91,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal static void Release()
         {
             _manifestLoader.StopLoader();
-            _natAssetState = NatAssetState.Release;
+            SetNatAssetState(NatAssetState.Release);
             _assetDic.Clear();
             _assetGroupDic.Clear();
             _sceneDic.Clear();

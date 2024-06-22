@@ -32,6 +32,11 @@ namespace NATFrameWork.NatAsset.Runtime
             }
         }
 
+        internal static void ReleaseAll()
+        {
+            _referenceDic.Clear();
+        }
+
         private static Pool GetOrCreatePool<T>()
         {
             Type type = typeof(T);

@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
@@ -102,10 +101,10 @@ namespace NATFrameWork.NatAsset.Runtime
             return false;
         }
 
-        private static string GetRealProviderKey(string guid, Type type)
+        internal static void FreeUnUseAsset()
         {
-            string realKey = $"{guid}-{type.ToString()}";
-            return realKey;
+            //立即切换至同步卸载
+            _unLoadTaskRunner.SwitchRunModel(RunModel.Sync);
         }
     }
 }

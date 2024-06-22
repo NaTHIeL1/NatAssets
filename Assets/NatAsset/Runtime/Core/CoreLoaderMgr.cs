@@ -31,6 +31,9 @@ namespace NATFrameWork.NatAsset.Runtime
             _localLoader = null;
             NatAssetSetting.ReleaseData();
             ManifestLoad.Release();
+            TypeStringGUIDPool.Release();
+            ReferencePool.ReleaseAll();
+            GC.Collect();
             GC.Collect();
         }
 
