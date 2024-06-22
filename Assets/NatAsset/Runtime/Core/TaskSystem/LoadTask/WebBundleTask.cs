@@ -33,13 +33,13 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             if (TaskState == TaskState.Waiting)
             {
-                string bundleName = TaskGUID;
-                string targetURL = Path.Combine(NatAssetSetting.AssetServerURL, bundleName);
+                string bundleName = TaskName;
+                string loadPath = RuntimeData.GetRuntimeLoadPath(bundleName);
                 if (NatAssetSetting.WebGLIsUseCache)
-                    _req = UnityWebRequestAssetBundle.GetAssetBundle(targetURL,
+                    _req = UnityWebRequestAssetBundle.GetAssetBundle(loadPath,
                         RuntimeData.GetAssetBundleHash(bundleName));
                 else
-                    _req = UnityWebRequestAssetBundle.GetAssetBundle(targetURL);
+                    _req = UnityWebRequestAssetBundle.GetAssetBundle(loadPath);
                 _op = _req.SendWebRequest();
                 _op.priority = (int) TaskPriority;
             }
@@ -92,14 +92,14 @@ namespace NATFrameWork.NatAsset.Runtime
             if (assetBundle == null)
             {
                 if (isRelease) return;
-                string error = $"Web资源包:{TaskGUID} 加载失败，加载路径错误或网络状况差";
+                string error = $"Web资源包:{TaskName} 加载失败，加载路径错误或网络状况差";
                 Debug.LogError(error);
                 _taskResult = TaskResult.Faild;
             }
             else
             {
                 Result = assetBundle;
-                BundleInfo bundleInfo = BundleInfo.CreateBundleInfo(TaskGUID, assetBundle);
+                BundleInfo bundleInfo = BundleInfo.CreateBundleInfo(TaskName, assetBundle);
                 RuntimeData.AddBundleInfo(bundleInfo);
                 //资源上锁
                 bundleInfo.Lock();

@@ -76,6 +76,7 @@ namespace NATFrameWork.NatAsset.Runtime
             {
                 //无效句柄，已被回收或丢弃
                 Debug.LogWarning("无效句柄");
+                return;
             }
             else if (_handleState == HandleState.Loading)
             {
@@ -96,7 +97,7 @@ namespace NATFrameWork.NatAsset.Runtime
         private void InternalUnLoad()
         {
             //已经加载完毕的走计数卸载流程
-            AssetInfo assetInfo = RuntimeData.GetAsset(Name);
+            AssetInfo assetInfo = RuntimeData.GetAsset(Name, TargetType);
             if (assetInfo != null)
             {
                 assetInfo.RedRefCount();

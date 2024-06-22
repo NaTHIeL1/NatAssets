@@ -174,7 +174,7 @@ namespace NATFrameWork.NatAsset.Editor
                 string group = groups[i];
                 foreach (BundleManifest bundleManifest in versionBundleManifest)
                 {
-                    if (bundleManifest.MainGroup == group)
+                    if (bundleManifest.Groups.Contains(group))
                     {
                         if (!bundleDic.ContainsKey(bundleManifest.BundlePath))
                         {

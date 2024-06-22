@@ -91,9 +91,8 @@ namespace NATFrameWork.NatAsset.Runtime
 #if UNITY_EDITOR
             if (NatAssetSetting.TRunWay == RunWay.Editor)
             {
-                sceneProvider = EditorSceneProvider.Create<EditorSceneProvider>(providerName, priority);
-                EditorSceneProvider sceneBuildInProvider = (EditorSceneProvider) sceneProvider;
-                sceneBuildInProvider.SetLoadSceneMode(loadSceneMode, targetPath);
+                SceneProviderParam sceneProviderParam = new SceneProviderParam(providerName, targetPath, loadSceneMode);
+                sceneProvider = EditorSceneProvider.Create<EditorSceneProvider>(sceneProviderParam, priority);
             }
             else
             {
@@ -156,18 +155,15 @@ namespace NATFrameWork.NatAsset.Runtime
             LoadSceneMode loadSceneMode)
         {
             BaseProvider sceneProvider = null;
+            SceneProviderParam sceneProviderParam = new SceneProviderParam(providerName, targetPath, loadSceneMode);
             if (IsBuildInScene(targetPath))
             {
                 //走内置场景加载逻辑
-                sceneProvider = SceneBuildInProvider.Create<SceneBuildInProvider>(providerName, priority);
-                SceneBuildInProvider sceneBuildInProvider = (SceneBuildInProvider) sceneProvider;
-                sceneBuildInProvider.SetLoadSceneMode(loadSceneMode, targetPath);
+                sceneProvider = SceneBuildInProvider.Create<SceneBuildInProvider>(sceneProviderParam, priority);
             }
             else
             {
-                sceneProvider = SceneBundleProvider.Create<SceneBundleProvider>(providerName, priority);
-                SceneBundleProvider sceneBundleProvider = (SceneBundleProvider) sceneProvider;
-                sceneBundleProvider.SetLoadSceneMode(loadSceneMode, targetPath);
+                sceneProvider = SceneBundleProvider.Create<SceneBundleProvider>(sceneProviderParam, priority);
             }
 
             return sceneProvider;

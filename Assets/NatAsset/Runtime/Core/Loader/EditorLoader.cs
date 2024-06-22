@@ -16,7 +16,7 @@ namespace NATFrameWork.NatAsset.Runtime
             }
             else
             {
-                AssetInfo assetInfo = RuntimeData.GetAsset(targetPath);
+                AssetInfo assetInfo = RuntimeData.GetAsset(targetPath, type);
                 if (assetInfo == null)
                 {
                     string path = targetPath.Replace("\\", "/");
@@ -26,9 +26,8 @@ namespace NATFrameWork.NatAsset.Runtime
                     }
                     else
                     {
-                        baseProvider = EditorAssetProvider.Create<EditorAssetProvider>(path, priority);
-                        EditorAssetProvider editorAssetProvider = baseProvider as EditorAssetProvider;
-                        editorAssetProvider.SetAssetType(type);
+                        AssetProviderParam assetProviderParam = new AssetProviderParam(path, type);
+                        baseProvider = EditorAssetProvider.Create<EditorAssetProvider>(assetProviderParam, priority);
                         TaskSystem.AddProvider(baseProvider);
                         baseProvider.AddHandle(handle, priority, RunModel.Sync);
                     }
@@ -57,7 +56,7 @@ namespace NATFrameWork.NatAsset.Runtime
             }
             else
             {
-                AssetInfo assetInfo = RuntimeData.GetAsset(targetPath);
+                AssetInfo assetInfo = RuntimeData.GetAsset(targetPath, type);
                 if (assetInfo == null)
                 {
                     string path = targetPath.Replace("\\", "/");
@@ -67,9 +66,8 @@ namespace NATFrameWork.NatAsset.Runtime
                     }
                     else
                     {
-                        baseProvider = EditorAssetProvider.Create<EditorAssetProvider>(path, priority);
-                        EditorAssetProvider editorAssetProvider = baseProvider as EditorAssetProvider;
-                        editorAssetProvider.SetAssetType(type);
+                        AssetProviderParam assetProviderParam = new AssetProviderParam(path, type);
+                        baseProvider = EditorAssetProvider.Create<EditorAssetProvider>(assetProviderParam, priority);
                         TaskSystem.AddProvider(baseProvider);
                         baseProvider.AddHandle(handle, priority, RunModel.Async);
                     }

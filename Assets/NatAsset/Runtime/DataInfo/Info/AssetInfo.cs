@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Object = System.Object;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -7,6 +8,7 @@ namespace NATFrameWork.NatAsset.Runtime
     {
         internal object Asset { get; private set; }
         internal List<string> DepBundles { get; private set; }
+        internal Type AssetType { get; private set; }
 
         private void CreateInfo(Object asset, List<string> bundles)
         {
@@ -14,10 +16,11 @@ namespace NATFrameWork.NatAsset.Runtime
             this.DepBundles = bundles;
         }
 
-        internal static AssetInfo CreateAssetInfo(string targetPath, Object asset, List<string> depBundle)
+        internal static AssetInfo CreateAssetInfo(string targetPath,Type type, Object asset, List<string> depBundle)
         {
             AssetInfo assetInfo = AssetInfo.Create<AssetInfo>(targetPath);
             assetInfo.CreateInfo(asset, depBundle);
+            assetInfo.AssetType = type;
             return assetInfo;
         }
 
@@ -52,7 +55,8 @@ namespace NATFrameWork.NatAsset.Runtime
         private void LaunchUnLoadTask()
         {
             if (_unLoadTask != null) return;
-            _unLoadTask = AssetUnLoadTask.CreateTask<AssetUnLoadTask>(InfoNameGUID, Priority.Middle);
+            AssetTaskParam assetTaskParam = new AssetTaskParam(InfoNameGUID, AssetType);
+            _unLoadTask = AssetUnLoadTask.CreateTask<AssetUnLoadTask>(assetTaskParam, Priority.Middle);
             TaskSystem.UnLoadTaskRunner.AddTask(_unLoadTask);
         }
 

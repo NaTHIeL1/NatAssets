@@ -27,7 +27,7 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             if (TaskState == TaskState.Waiting)
             {
-                string assetPath = RuntimeData.GetRuntimeLoadPath(TaskGUID);
+                string assetPath = RuntimeData.GetRuntimeLoadPath(TaskName);
                 _webRequest = UnityWebRequest.Get(assetPath);
                 _operation = _webRequest.SendWebRequest();
                 if (RunModel == RunModel.Async)

@@ -129,7 +129,7 @@ namespace NATFrameWork.NatAsset.Runtime
                     {
                         throw new Exception("未设置服务器远端资源地址，需要设置NatAssetMgr.UpdateURLAddress");
                     }
-                    string url = Path.Combine(NatAssetSetting.AssetServerURL);
+                    string url = NatAssetSetting.AssetServerURL;
                     _remotePath = url;
                     return url;
                 }

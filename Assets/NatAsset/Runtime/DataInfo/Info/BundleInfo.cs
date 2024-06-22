@@ -46,7 +46,8 @@ namespace NATFrameWork.NatAsset.Runtime
         private void LaunchUnLoadTask()
         {
             if (_unLoadTask != null) return;
-            _unLoadTask = BundleUnLoadTask.CreateTask<BundleUnLoadTask>(InfoNameGUID, Priority.Low);
+            ComTaskParam comTaskParam = new ComTaskParam(InfoNameGUID, InfoNameGUID);
+            _unLoadTask = BundleUnLoadTask.CreateTask<BundleUnLoadTask>(comTaskParam, Priority.Low);
             TaskSystem.UnLoadTaskRunner.AddTask(_unLoadTask);
         }
 

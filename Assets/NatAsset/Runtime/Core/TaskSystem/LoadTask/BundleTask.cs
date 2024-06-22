@@ -27,7 +27,7 @@ namespace NATFrameWork.NatAsset.Runtime
             //任务未启动
             if (TaskState == TaskState.Waiting)
             {
-                string bundleName = TaskGUID;
+                string bundleName = TaskName;
                 string loadPath = RuntimeData.GetRuntimeLoadPath(bundleName);
                 uint crc = NatAssetSetting.UseCRC ? RuntimeData.GetBundleCRC(bundleName) : 0u;
                 if (RunModel == RunModel.Async)
@@ -170,14 +170,14 @@ namespace NATFrameWork.NatAsset.Runtime
             if (assetBundle == null)
             {
                 if (isRelease) return;
-                string Error = $"资源包:{TaskGUID} 加载失败，请检查加载路径是否正确";
+                string Error = $"资源包:{TaskName} 加载失败，请检查加载路径是否正确";
                 Debug.LogError(Error);
                 _taskResult = TaskResult.Faild;
             }
             else
             {
                 Result = assetBundle;
-                BundleInfo bundleInfo = BundleInfo.CreateBundleInfo(TaskGUID, assetBundle);
+                BundleInfo bundleInfo = BundleInfo.CreateBundleInfo(TaskName, assetBundle);
                 RuntimeData.AddBundleInfo(bundleInfo);
                 //资源上锁
                 bundleInfo.Lock();

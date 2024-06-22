@@ -15,7 +15,7 @@ namespace NATFrameWork.NatAsset.Runtime
             }
             else
             {
-                AssetInfo assetInfo = RuntimeData.GetAsset(targetPath);
+                AssetInfo assetInfo = RuntimeData.GetAsset(targetPath, type);
                 if (assetInfo == null)
                 {
                     if (TaskSystem.TryGetProvider(targetPath, out BaseProvider baseProvider))
@@ -24,7 +24,8 @@ namespace NATFrameWork.NatAsset.Runtime
                     }
                     else
                     {
-                        baseProvider = AssetProvider.Create<AssetProvider>(targetPath, priority);
+                        AssetProviderParam assetProviderParam = new AssetProviderParam(targetPath, type);
+                        baseProvider = AssetProvider.Create<AssetProvider>(assetProviderParam, priority);
                         TaskSystem.AddProvider(baseProvider);
                         baseProvider.AddHandle(handle, priority, RunModel.Sync);
                     }
@@ -49,7 +50,7 @@ namespace NATFrameWork.NatAsset.Runtime
             }
             else
             {
-                AssetInfo assetInfo = RuntimeData.GetAsset(targetPath);
+                AssetInfo assetInfo = RuntimeData.GetAsset(targetPath, type);
                 if (assetInfo == null)
                 {
                     if (TaskSystem.TryGetProvider(targetPath, out BaseProvider baseProvider))
@@ -58,7 +59,8 @@ namespace NATFrameWork.NatAsset.Runtime
                     }
                     else
                     {
-                        baseProvider = AssetProvider.Create<AssetProvider>(targetPath, priority);
+                        AssetProviderParam assetProviderParam = new AssetProviderParam(targetPath, type);
+                        baseProvider = AssetProvider.Create<AssetProvider>(assetProviderParam, priority);
                         TaskSystem.AddProvider(baseProvider);
                         baseProvider.AddHandle(handle, priority, RunModel.Async);
                     }

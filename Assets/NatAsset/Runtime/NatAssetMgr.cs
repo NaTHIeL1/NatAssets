@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 namespace NATFrameWork.NatAsset.Runtime

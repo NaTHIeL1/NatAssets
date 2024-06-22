@@ -9,25 +9,22 @@ namespace NATFrameWork.NatAsset.Runtime
         private AsyncOperation _operation;
         private Scene _scene;
         private string _sceneName;
-        private string _scenePath;
         private LoadSceneMode _loadSceneMode = LoadSceneMode.Single;
+        private SceneProviderParam _sceneProviderParam;
 
         protected override void OnCreate()
         {
+            _sceneProviderParam = (SceneProviderParam)_providerParam;
+            _loadSceneMode = _sceneProviderParam.LoadSceneMode;
             _isSceneProvider = true;
-        }
-
-        internal void SetLoadSceneMode(LoadSceneMode loadSceneMode, string scenePath)
-        {
-            _loadSceneMode = loadSceneMode;
-            _scenePath = scenePath;
+            RuntimeData.GetSceneName(_assetPath, out _sceneName);
         }
 
         internal override void OnUpdate()
         {
             if (ProviderState == ProviderState.Waiting)
             {
-                CommonFunc.EditorLoadScene(_scenePath, Priority, RunModel, _loadSceneMode, out _scene, out _operation);
+                CommonFunc.EditorLoadScene(AssetPath, Priority, RunModel, _loadSceneMode, out _scene, out _operation);
                 SetSceneToHandle(_scene);
                 SetProviderState(ProviderState.Running);
             }
@@ -56,9 +53,9 @@ namespace NATFrameWork.NatAsset.Runtime
             _operation = null;
             _scene = default;
             _sceneName = null;
-            _scenePath = null;
             _isSceneProvider = false;
             _loadSceneMode = LoadSceneMode.Single;
+            _sceneProviderParam = default;
         }
 
         protected override void OnCancelProvider()
@@ -91,7 +88,7 @@ namespace NATFrameWork.NatAsset.Runtime
             string error = string.Empty;
             if (scene == default)
             {
-                error = $"场景路径:{_scenePath},加载场景:{_sceneName}时出错，检查场景路径是否正确";
+                error = $"场景路径:{AssetPath},加载场景:{_sceneName}时出错，检查场景路径是否正确";
                 SetSceneHandle(scene, error, null);
                 SetProviderResult(ProviderResult.Faild);
                 return;

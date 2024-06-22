@@ -1,9 +1,11 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
     internal static class TaskSystem
     {
+        //todo:增加type作为额外判断条件来选择provide
         private static ListDic<string, BaseProvider> _providerList = new ListDic<string, BaseProvider>(1000);
         private static TaskRunner _loadTaskRunner = new TaskRunner();
         private static TaskRunner _unLoadTaskRunner = new TaskRunner();
@@ -83,11 +85,13 @@ namespace NATFrameWork.NatAsset.Runtime
             _unLoadTaskRunner.Release();
         }
 
+        //todo:后续准备重构这一部分代码
         internal static void AddProvider(BaseProvider baseProvider)
         {
             _providerList.Add(baseProvider.ProviderGUID, baseProvider);
         }
 
+        //todo:后续准备重构这一部分代码
         internal static bool TryGetProvider(string key, out BaseProvider baseProvider)
         {
             if (_providerList.TryGetValue(key, out baseProvider))
@@ -96,6 +100,12 @@ namespace NATFrameWork.NatAsset.Runtime
             }
 
             return false;
+        }
+
+        private static string GetRealProviderKey(string guid, Type type)
+        {
+            string realKey = $"{guid}-{type.ToString()}";
+            return realKey;
         }
     }
 }

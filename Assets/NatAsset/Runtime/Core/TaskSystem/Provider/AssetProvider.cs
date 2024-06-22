@@ -10,11 +10,15 @@ namespace NATFrameWork.NatAsset.Runtime
         private string _bundleName, _assetName;
         private string[] _dependenceBundles;
         private TaskRunner _localLoadRunner;
+        private Type _assetType;
+        private AssetProviderParam _assetProviderParam;
 
         protected override void OnCreate()
         {
+            _assetProviderParam = (AssetProviderParam)_providerParam;
+            _assetType = _assetProviderParam.AssetType;
             _localLoadRunner = TaskSystem.LoadTaskRunner;
-            RuntimeData.GetBundlePath(ProviderGUID, out _bundleName, out _assetName);
+            RuntimeData.GetBundlePath(AssetPath, out _bundleName, out _assetName);
             //todo:后续改为通过资源名获取资源依赖的bundle
             _dependenceBundles = RuntimeData.GetAllDependencies(_bundleName);
         }
@@ -45,7 +49,7 @@ namespace NATFrameWork.NatAsset.Runtime
                     //启动正式资源加载
                     if (_assetTask == null)
                     {
-                        CommonAssetTaskLogic(_assetName, _localLoadRunner, Priority, out BaseTask baseTask);
+                        CommonAssetTaskLogic(_assetName, _assetType, _localLoadRunner, Priority, out BaseTask baseTask);
                         _assetTask = (AssetTask) baseTask;
                     }
 
@@ -89,6 +93,8 @@ namespace NATFrameWork.NatAsset.Runtime
             _bundleName = string.Empty;
             _assetName = string.Empty;
             _localLoadRunner = null;
+            _assetType = null;
+            _assetProviderParam = default;
         }
 
         protected override void OnChangeLoadType(RunModel runModel)
@@ -148,7 +154,7 @@ namespace NATFrameWork.NatAsset.Runtime
             string error = string.Empty;
             if (asset == null)
             {
-                error = $"资源路径:{ProviderGUID},加载资源资源名:{_assetName}时出错，检查是否资源名错误";
+                error = $"资源路径:{AssetPath},加载资源资源名:{_assetName}时出错，检查是否资源名错误";
                 SetAssetHandle(asset, error, null);
                 SetProviderResult(ProviderResult.Faild);
                 return;
@@ -161,7 +167,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 bundles.Add(bundle);
             }
 
-            AssetInfo assetInfo = AssetInfo.CreateAssetInfo(ProviderGUID, asset, bundles);
+            AssetInfo assetInfo = AssetInfo.CreateAssetInfo(AssetPath, _assetType, asset, bundles);
             RuntimeData.AddAssetInfo(assetInfo);
             SetAssetHandle(asset, error, assetInfo);
             SetProviderResult(ProviderResult.Success);

@@ -4,11 +4,20 @@ namespace NATFrameWork.NatAsset.Runtime
 {
     public class BundleUnLoadTask : BaseTask
     {
-        private float executionTime = 0;
+        private float _executionTime = 0;
 
         protected override void OnCreate()
         {
-            executionTime = 0;
+            _executionTime = 0;
+        }
+
+        public override float Progress
+        {
+            get
+            {
+                return _executionTime / NatAssetSetting.AssetDelayTime;
+            }
+            protected set => base.Progress = value;
         }
 
         internal override void TaskUpdate()
@@ -20,11 +29,8 @@ namespace NATFrameWork.NatAsset.Runtime
 
             if (TaskState == TaskState.Running)
             {
-                executionTime += Time.deltaTime;
-#if UNITY_EDITOR
-                Progress = executionTime / NatAssetSetting.BundleDelayTime;
-#endif
-                if (executionTime >= NatAssetSetting.BundleDelayTime)
+                _executionTime += Time.deltaTime;
+                if (_executionTime >= NatAssetSetting.BundleDelayTime)
                 {
                     UnLoad();
                     SetTaskState(TaskState.End);
@@ -45,7 +51,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
             if (TaskState == TaskState.Running)
             {
-                executionTime = 0;
+                _executionTime = 0;
                 Progress = 0;
                 SetTaskState(TaskState.End);
                 return;
@@ -69,12 +75,12 @@ namespace NATFrameWork.NatAsset.Runtime
 
         protected override void OnClear()
         {
-            executionTime = 0;
+            _executionTime = 0;
         }
 
         private void UnLoad()
         {
-            BundleInfo bundleInfo = RuntimeData.GetBundle(TaskGUID);
+            BundleInfo bundleInfo = RuntimeData.GetBundle(TaskName);
             RuntimeData.RemoveBundleInfo(bundleInfo);
             bundleInfo.Bundle.Unload(true);
             bundleInfo.Bundle = null;

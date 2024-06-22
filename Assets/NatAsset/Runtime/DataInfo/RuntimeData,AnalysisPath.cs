@@ -23,6 +23,8 @@ namespace NATFrameWork.NatAsset.Runtime
                     return Path.Combine(NatAssetSetting.ReadOnlyPath, realLoadPath);
                 case LoadPath.ReadWrite:
                     return Path.Combine(NatAssetSetting.ReadWritePath, realLoadPath);
+                case LoadPath.Remote:
+                    return Path.Combine(NatAssetSetting.RemotePath, realLoadPath);
                 default: return null;
             }
         }

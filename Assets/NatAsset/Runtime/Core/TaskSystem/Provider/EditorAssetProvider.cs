@@ -9,21 +9,19 @@ namespace NATFrameWork.NatAsset.Runtime
     internal class EditorAssetProvider:BaseProvider
     {
         private string _assetName;
-        private Type _type;
+        private Type _assetType;
+        private AssetProviderParam _assetProviderParam;
         protected override void OnCreate()
         {
-        }
-
-        internal void SetAssetType(Type type)
-        {
-            _type = type;
+            _assetProviderParam = (AssetProviderParam)_providerParam;
+            _assetType = _assetProviderParam.AssetType;
         }
 
         internal override void OnUpdate()
         {
             if (ProviderState == ProviderState.Waiting)
             {
-                Object obj = AssetDatabase.LoadAssetAtPath(ProviderGUID, _type);
+                Object obj = AssetDatabase.LoadAssetAtPath(AssetPath, _assetType);
                 SetAssetSetting(obj);
                 SetProviderState(ProviderState.Finish);
             }
@@ -32,7 +30,8 @@ namespace NATFrameWork.NatAsset.Runtime
         protected override void OnClear()
         {
             _assetName = null;
-            _type = null;
+            _assetType = null;
+            _assetProviderParam = default;
         }
 
         protected override void OnChangeLoadType(RunModel runModel)
@@ -53,13 +52,13 @@ namespace NATFrameWork.NatAsset.Runtime
             string error = string.Empty;
             if (asset == null)
             {
-                error = $"资源路径:{ProviderGUID},加载资源资源名:{_assetName}时出错，检查是否资源名错误";
+                error = $"资源路径:{AssetPath},加载资源资源名:{_assetName}时出错，检查是否资源名错误";
                 SetAssetHandle(asset, error, null);
                 SetProviderResult(ProviderResult.Faild);
                 return;
             }
             
-            AssetInfo assetInfo = AssetInfo.CreateAssetInfo(ProviderGUID, asset, null);
+            AssetInfo assetInfo = AssetInfo.CreateAssetInfo(AssetPath, _assetType, asset, null);
             RuntimeData.AddAssetInfo(assetInfo);
             SetAssetHandle(asset, error, assetInfo);
             SetProviderResult(ProviderResult.Success);

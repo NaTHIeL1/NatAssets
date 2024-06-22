@@ -5,9 +5,11 @@ namespace NATFrameWork.NatAsset.Runtime
 {
     public class AssetTask : BaseTask
     {
+        private Type _assetType;
         private string _bundleName, _assetName;
         private AssetBundleRequest _assetBundleRequest;
         private object _asset;
+        private AssetTaskParam _assetTaskParam;
 
         public override float Progress
         {
@@ -23,6 +25,8 @@ namespace NATFrameWork.NatAsset.Runtime
         protected override void OnCreate()
         {
             _taskType = TaskType.Asset;
+            _assetTaskParam = (AssetTaskParam)_taskParam;
+            _assetType = _assetTaskParam.AssetType;
         }
 
         internal override void TaskUpdate()
@@ -30,7 +34,7 @@ namespace NATFrameWork.NatAsset.Runtime
             //等待启动
             if (TaskState == TaskState.Waiting)
             {
-                RuntimeData.GetBundlePath(TaskGUID, out _bundleName, out _assetName);
+                RuntimeData.GetBundlePath(TaskName, out _bundleName, out _assetName);
                 BundleInfo bundleInfo = RuntimeData.GetBundle(_bundleName);
                 if (bundleInfo == null)
                 {
@@ -40,13 +44,13 @@ namespace NATFrameWork.NatAsset.Runtime
                 {
                     if (RunModel == RunModel.Async)
                     {
-                        _assetBundleRequest = bundleInfo.Bundle.LoadAssetAsync(_assetName);
+                        _assetBundleRequest = bundleInfo.Bundle.LoadAssetAsync(_assetName, _assetType);
                         _assetBundleRequest.priority = (int)TaskPriority;
                         SetTaskState(TaskState.Running);
                     }
                     else
                     {
-                        _asset = bundleInfo.Bundle.LoadAsset(_assetName);
+                        _asset = bundleInfo.Bundle.LoadAsset(_assetName, _assetType);
                         SetTaskState(TaskState.Finish);
                     }
                 }
@@ -82,6 +86,8 @@ namespace NATFrameWork.NatAsset.Runtime
             _assetName = string.Empty;
             _asset = null;
             _assetBundleRequest = null;
+            _assetType = null;
+            _assetTaskParam = default;
         }
 
         protected override void OnCancelTask()
@@ -152,7 +158,7 @@ namespace NATFrameWork.NatAsset.Runtime
             if (asset == null)
             {
                 if (isRelease) return;
-                Debug.LogError($"资源路径:{TaskGUID},加载资源资源名:{_assetName}时出错，检查是否资源名错误");
+                Debug.LogError($"资源路径:{TaskName},加载资源资源名:{_assetName},Type{_assetType.Name}时出错，检查是否资源名错误");
                 _taskResult = TaskResult.Faild;
             }
             else

@@ -15,8 +15,10 @@ namespace NATFrameWork.NatAsset.Runtime
         protected TaskType _taskType = TaskType.Asset;
         protected TaskResult _taskResult = TaskResult.Nono;
         protected TaskRunner TaskRunner => _parentRunner;
+        protected ITaskParam _taskParam = null;
 
         public string TaskGUID { get; protected set; }
+        public string TaskName { get; protected set; }
         public string OtherTaskName { get; protected set; }
         public int TaskID { get; protected set; }
         public virtual float Progress { get; protected set; }
@@ -38,17 +40,32 @@ namespace NATFrameWork.NatAsset.Runtime
         public bool IsDone => _taskState == TaskState.End;
         public bool IsSuccess => _taskResult == TaskResult.Success;
 
-        internal static T CreateTask<T>(string name, Priority taskPriority) where T : BaseTask, new()
+        //internal static T CreateTask<T>(string name, Priority taskPriority) where T : BaseTask, new()
+        //{
+        //    T task = ReferencePool.Get<T>();
+        //    task.TaskGUID = name;
+        //    task.TaskID = task.GetHashCode();
+        //    if (string.IsNullOrEmpty(name))
+        //        task.TaskGUID = task.TaskID.ToString();
+        //    task.Progress = 0;
+        //    task.CreateTime = DateTime.Now.ToUniversalTime().Ticks;
+        //    task._priority = taskPriority;
+        //    task._taskState = TaskState.Waiting;
+        //    task.OnCreate();
+        //    return task;
+        //}
+
+        internal static T CreateTask<T>(ITaskParam taskParam, Priority taskPriority) where T : BaseTask, new()
         {
             T task = ReferencePool.Get<T>();
-            task.TaskGUID = name;
+            task.TaskGUID = taskParam.TaskGUID;
+            task.TaskName = taskParam.TaskName;
             task.TaskID = task.GetHashCode();
-            if (string.IsNullOrEmpty(name))
-                task.TaskGUID = task.TaskID.ToString();
             task.Progress = 0;
             task.CreateTime = DateTime.Now.ToUniversalTime().Ticks;
             task._priority = taskPriority;
             task._taskState = TaskState.Waiting;
+            task._taskParam = taskParam;
             task.OnCreate();
             return task;
         }
@@ -208,6 +225,7 @@ namespace NATFrameWork.NatAsset.Runtime
             _taskType = TaskType.Asset;
             _priority = Priority.Low;
             _taskResult = TaskResult.Nono;
+            _taskParam = null;
         }
     }
 }

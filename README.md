@@ -3,7 +3,7 @@
 # 注意事项
 + 目前在框架中的资源延迟卸载时间为60s，Bundle延迟卸载时间为60s，每帧任务最大运行数量为50个。目前无法修改。
 + 支持PC（使用streamingAssets目录）、安卓（默认streamingAssets目录）
-+ IOS未测试；WebGL未适配。
++ IOS未测试；WebGL未测试。
 # 编辑器使用
 ## 介绍
 + 资源框架建立了对应的资源编辑器
@@ -233,6 +233,5 @@ public List<string> GenerateExcludeFilName()
 + 将一些反射接口进行整合放进ScriptObject中，无需代码继承。
 + 修改SBP打包机制，完全自定义而不采用官方的Build接口。
 + 移除Build-In打包代码，只维护一套SBP。
-+ 加入资源组概念，后续调整配置文件，以实现如按关卡下载资源等目标。
 + 完成Handle面板的代码。
 + 完成资源更新方面的代码。
