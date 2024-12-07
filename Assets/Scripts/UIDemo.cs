@@ -30,7 +30,7 @@ public class UIDemo : MonoBehaviour
                 }
                 else
                 {
-                    handle.Unload();
+                    handle.Dispose();
                 }
             };
         });
@@ -40,7 +40,7 @@ public class UIDemo : MonoBehaviour
             {
                 TestPackage testStruct = assetHandles[0];
                 Destroy(testStruct.obj);
-                testStruct.handle.Unload();
+                testStruct.handle.Dispose();
                 assetHandles.RemoveAt(0);
             }
         });
