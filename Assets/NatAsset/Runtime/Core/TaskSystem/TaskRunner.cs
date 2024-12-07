@@ -142,5 +142,15 @@ namespace NATFrameWork.NatAsset.Runtime
                 _taskGroups[i].SwitchRunModel(runModel);
             }
         }
+
+        internal int GetTaskNum()
+        {
+            int result = 0;
+            for(int i = 0 ;i <= _taskGroups.Count; i++)
+            {
+                result += _taskGroups[i].GetTaskNum();
+            }
+            return result;
+        }
     }
 }

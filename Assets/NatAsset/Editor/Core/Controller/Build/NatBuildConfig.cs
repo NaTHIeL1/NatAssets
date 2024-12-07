@@ -77,6 +77,8 @@ namespace NATFrameWork.NatAsset.Editor
             {
                 throw e;
             }
+            if (Mainfest == null)
+                return;
 
             //生成MD5值
             BuildBundleDicMD5(outPut, bundleBuildInfos);

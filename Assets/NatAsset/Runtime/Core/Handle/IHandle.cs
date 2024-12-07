@@ -57,6 +57,12 @@ namespace NATFrameWork.NatAsset.Runtime
         internal void SetProvider(BaseProvider baseProvider)
         {
             _baseProvider = baseProvider;
+            OnSetProvider(baseProvider);
+        }
+
+        protected virtual void OnSetProvider(BaseProvider baseProvider)
+        {
+
         }
 
         protected bool CheckTokenCancel()
@@ -86,12 +92,12 @@ namespace NATFrameWork.NatAsset.Runtime
         /// <summary>
         /// 卸载句柄
         /// </summary>
-        public void Unload()
+        public void Dispose()
         {
-            OnUnLoad();
+            OnDispose();
         }
 
-        protected abstract void OnUnLoad();
+        protected abstract void OnDispose();
 
         protected virtual bool CanBeReference()
         {

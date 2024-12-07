@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
@@ -19,6 +18,11 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal static void Release(IReference reference)
         {
+            if (_referenceDic == null || !_referenceDic.ContainsKey(reference.GetType())) 
+            { 
+                reference.Clear();
+                return;
+            }
             Pool pool = _referenceDic[reference.GetType()];
             pool.Release(reference);
         }

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -72,6 +74,25 @@ namespace NATFrameWork.NatAsset.Runtime
                 }
             }
 
+            return handle;
+        }
+
+        public BatchAssetHandle LoadAssetsAsync(List<string> targetPaths, Type type, Priority priority)
+        {
+            BatchAssetHandle handle = null;
+            if (targetPaths == null || targetPaths.Count == 0)
+            {
+                Debug.LogWarning("批量加载资源的资源名列表为空");
+                handle = BatchAssetHandle.Create();
+                return handle;
+            }
+            handle = BatchAssetHandle.Create();
+            for (int i = 0; i < targetPaths.Count; i++)
+            {
+                AssetHandle assetHandle = LoadAssetAsync(targetPaths[i], type, priority);
+                handle.AddAssetHandle(assetHandle);
+            }
+            handle.OnUpdate();
             return handle;
         }
 

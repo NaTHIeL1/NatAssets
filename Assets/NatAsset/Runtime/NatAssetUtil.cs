@@ -65,5 +65,10 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             return RuntimeData.CheckHasBundle(bundlePath);
         }
+
+        public static List<string> GetBundleAllAssetPath(string bundlePath)
+        {
+            return RuntimeData.GetBundleAllAssetsPath(bundlePath);
+        }
     }
 }

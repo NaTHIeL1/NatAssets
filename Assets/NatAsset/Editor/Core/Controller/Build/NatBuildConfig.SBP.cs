@@ -32,6 +32,10 @@ namespace NATFrameWork.NatAsset.Editor
             ReturnCode exitCode =
                 ContentPipeline.BuildAssetBundles(parameters, content, out IBundleBuildResults results, taskList,
                     natBundleBuildConfigParam);
+            if (exitCode == ReturnCode.UnsavedChanges)
+            {
+                Debug.LogError("存在未保存设置的资源");
+            }
             if (exitCode < ReturnCode.Success)
                 return null;
 

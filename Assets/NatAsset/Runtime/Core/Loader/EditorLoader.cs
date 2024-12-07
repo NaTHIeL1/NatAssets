@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -85,27 +87,46 @@ namespace NATFrameWork.NatAsset.Runtime
             return null;
         }
 
-//         public SceneHandle LoadScene(string targetPath, LoadSceneMode loadSceneMode = LoadSceneMode.Single,
-//             Priority priority = Priority.Low)
-//         {
-// #if UNITY_EDITOR
-//             //装配加载路径并标准化
-//             SceneHandle handle = SceneHandle.Create(targetPath, loadSceneMode);
-//             if (targetPath == string.Empty)
-//             {
-//                 handle.Error = $"资源路径不能为空，检查资源路径是否正确";
-//                 handle.SetScene(default);
-//             }
-//             else
-//             {
-//                 SceneSystem.LoadScene(targetPath,loadSceneMode, priority,RunModel.Sync, handle);
-//             }
-//
-//             return handle;
-// #else
-//             return null;
-// #endif
-//         }
+        public BatchAssetHandle LoadAssetsAsync(List<string> targetPaths, Type type, Priority priority)
+        {
+            BatchAssetHandle handle = null;
+            if(targetPaths == null || targetPaths.Count == 0)
+            {
+                Debug.LogWarning("批量加载资源的资源名列表为空");
+                handle = BatchAssetHandle.Create();
+                return handle;
+            }
+            handle = BatchAssetHandle.Create();
+            for(int i = 0; i < targetPaths.Count; i++)
+            {
+                AssetHandle assetHandle = LoadAssetAsync(targetPaths[i], type, priority);
+                handle.AddAssetHandle(assetHandle);
+            }
+            handle.OnUpdate();
+            return handle;
+        }
+
+        //         public SceneHandle LoadScene(string targetPath, LoadSceneMode loadSceneMode = LoadSceneMode.Single,
+        //             Priority priority = Priority.Low)
+        //         {
+        // #if UNITY_EDITOR
+        //             //装配加载路径并标准化
+        //             SceneHandle handle = SceneHandle.Create(targetPath, loadSceneMode);
+        //             if (targetPath == string.Empty)
+        //             {
+        //                 handle.Error = $"资源路径不能为空，检查资源路径是否正确";
+        //                 handle.SetScene(default);
+        //             }
+        //             else
+        //             {
+        //                 SceneSystem.LoadScene(targetPath,loadSceneMode, priority,RunModel.Sync, handle);
+        //             }
+        //
+        //             return handle;
+        // #else
+        //             return null;
+        // #endif
+        //         }
 
         public SceneHandle LoadSceneAsync(string targetPath, LoadSceneMode loadSceneMode,
             Priority priority)

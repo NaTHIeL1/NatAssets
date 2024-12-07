@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
@@ -12,6 +13,7 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             NatAssetSetting.InitData();
             SetLoader();
+            OperationSystem.Init();
             TaskSystem.Init();
             SceneSystem.Init();
             RuntimeData.Init(modelLoader);
@@ -21,12 +23,14 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             SceneSystem.Update();
             TaskSystem.Update();
+            OperationSystem.Update();
         }
 
         internal static void Release()
         {
             SceneSystem.Release();
             TaskSystem.Release();
+            OperationSystem.Release();
             RuntimeData.Release();
             _localLoader = null;
             NatAssetSetting.ReleaseData();
@@ -49,9 +53,14 @@ namespace NATFrameWork.NatAsset.Runtime
             return _localLoader.LoadAssetAsync(path, type, priority);
         }
 
+        internal static BatchAssetHandle LoadAssetAsync(List<string> paths, Type type, Priority priority)
+        {
+            CheckHasInit();
+            return _localLoader.LoadAssetsAsync(paths, type, priority);
+        }
         internal static void UnLoadAsset(AssetHandle handle)
         {
-            handle.Unload();
+            handle.Dispose();
         }
 
         internal static SceneHandle LoadSceneAsync(string path, LoadSceneMode loadSceneMode, Priority priority)
@@ -73,6 +82,11 @@ namespace NATFrameWork.NatAsset.Runtime
                 return;
             TaskRunner taskRunner = TaskSystem.NetLoadTaskRunner;
             taskRunner.CancelTask(taskGUID);
+        }
+
+        internal static BatchAssetHandle GetBatchAssetHandle()
+        {
+            return BatchAssetHandle.Create();
         }
 
         private static void SetLoader()

@@ -70,7 +70,7 @@ namespace NATFrameWork.NatAsset.Runtime
             return false;
         }
 
-        protected override void OnUnLoad()
+        protected override void OnDispose()
         {
             if (!IsValid)
             {

@@ -19,7 +19,6 @@ namespace NATFrameWork.NatAsset.Runtime
 
         public string TaskGUID { get; protected set; }
         public string TaskName { get; protected set; }
-        public string OtherTaskName { get; protected set; }
         public int TaskID { get; protected set; }
         public virtual float Progress { get; protected set; }
         public long CreateTime { get; protected set; }
@@ -68,11 +67,6 @@ namespace NATFrameWork.NatAsset.Runtime
             task._taskParam = taskParam;
             task.OnCreate();
             return task;
-        }
-
-        internal void SetOtherTaskName(string otherTaskName)
-        {
-            OtherTaskName = otherTaskName;
         }
 
         internal static void ReleaseTask(BaseTask baseTask)
@@ -186,6 +180,10 @@ namespace NATFrameWork.NatAsset.Runtime
             this._refCount--;
         }
 
+        /// <summary>
+        /// 检查任务是否已经解锁
+        /// </summary>
+        /// <returns></returns>
         internal bool CheckCanDestroy()
         {
             if (this._refCount <= 0)
@@ -205,7 +203,7 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             if (TaskPriority > other.TaskPriority)
                 return 1;
-            if (CreateTime > other.CreateTime)
+            if (CreateTime < other.CreateTime)
                 return 1;
             return -1;
         }

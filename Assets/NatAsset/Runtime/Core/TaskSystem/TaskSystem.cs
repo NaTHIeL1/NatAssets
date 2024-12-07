@@ -6,6 +6,7 @@ namespace NATFrameWork.NatAsset.Runtime
     {
         //todo:增加type作为额外判断条件来选择provide
         private static ListDic<string, BaseProvider> _providerList = new ListDic<string, BaseProvider>(1000);
+        private static ListDic<string, BaseProvider> _netProviderList = new ListDic<string, BaseProvider>();
         private static TaskRunner _loadTaskRunner = new TaskRunner();
         private static TaskRunner _unLoadTaskRunner = new TaskRunner();
         private static TaskRunner _netLoadTaskRunner = new TaskRunner();
@@ -34,14 +35,20 @@ namespace NATFrameWork.NatAsset.Runtime
         //轮询Provider
         private static void UpdateProvider()
         {
-            for (int i = 0; i < _providerList.Count; i++)
+            UpdateProvider(_providerList);
+            UpdateProvider(_netProviderList);
+        }
+
+        private static void UpdateProvider(ListDic<string, BaseProvider> providerList)
+        {
+            for (int i = 0; i < providerList.Count; i++)
             {
-                BaseProvider baseProvider = _providerList.GetElementByIndex(i);
+                BaseProvider baseProvider = providerList.GetElementByIndex(i);
                 baseProvider.OnUpdate();
                 if (baseProvider.IsDone)
                 {
                     //已完成的任务启动回收
-                    _providerList.Remove(baseProvider.ProviderGUID);
+                    providerList.Remove(baseProvider.ProviderGUID);
                     BaseProvider.Release(baseProvider);
                     i--;
                 }
@@ -50,9 +57,15 @@ namespace NATFrameWork.NatAsset.Runtime
 
         private static void ReleaseProvider()
         {
-            for (int i = 0; i < _providerList.Count; i++)
+            ReleaseProvider(_providerList);
+            ReleaseProvider(_netProviderList);
+        }
+
+        private static void ReleaseProvider(ListDic<string, BaseProvider> providerList)
+        {
+            for (int i = 0; i < providerList.Count; i++)
             {
-                BaseProvider baseProvider = _providerList.GetElementByIndex(i);
+                BaseProvider baseProvider = providerList.GetElementByIndex(i);
                 BaseProvider.Release(baseProvider);
             }
         }
@@ -94,6 +107,21 @@ namespace NATFrameWork.NatAsset.Runtime
         internal static bool TryGetProvider(string key, out BaseProvider baseProvider)
         {
             if (_providerList.TryGetValue(key, out baseProvider))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static void AddNetProvider(BaseProvider baseProvider)
+        {
+            _netProviderList.Add(baseProvider.ProviderGUID, baseProvider);
+        }
+
+        internal static bool TryGetNetProvider(string key, out BaseProvider baseProvider)
+        {
+            if (_netProviderList.TryGetValue(key, out baseProvider))
             {
                 return true;
             }

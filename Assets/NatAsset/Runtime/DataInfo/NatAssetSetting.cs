@@ -71,7 +71,7 @@
     public enum RunWay
     {
         Editor = 1,
-        PackageOnly = 2
+        PackageOnly = 2,
     }
 
     internal enum LoadPath

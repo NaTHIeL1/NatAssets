@@ -141,13 +141,30 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             get
             {
+#if UNITY_EDITOR
                 if (string.IsNullOrEmpty(_cacheDownLoadPath))
                 {
                     string downLoadPath = Path.Combine(Application.dataPath, _tempCacheFolder);
                     _cacheDownLoadPath = FileExtend.NormalizePath(downLoadPath);
                     CreateDirectory(_cacheDownLoadPath);
                 }
+#endif
 
+#if UNITY_STANDALONE
+                if (string.IsNullOrEmpty(_cacheDownLoadPath))
+                {
+                    string downLoadPath = Path.Combine(Application.dataPath, _tempCacheFolder);
+                    _cacheDownLoadPath = FileExtend.NormalizePath(downLoadPath);
+                    CreateDirectory(_cacheDownLoadPath);
+                }
+#else
+                if (string.IsNullOrEmpty(_cacheDownLoadPath))
+                {
+                    string downLoadPath = Path.Combine(Application.persistentDataPath, _tempCacheFolder);
+                    _cacheDownLoadPath = FileExtend.NormalizePath(downLoadPath);
+                    CreateDirectory(_cacheDownLoadPath);
+                }
+#endif
                 return _cacheDownLoadPath;
             }
         }

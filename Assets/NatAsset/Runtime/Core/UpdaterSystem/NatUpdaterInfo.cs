@@ -198,5 +198,31 @@ namespace NATFrameWork.NatAsset.Runtime
             }
             return result;
         }
+
+        internal List<CheckInfo> GetCheckInfoByGroup(string groupName)
+        {
+            if (string.IsNullOrEmpty(groupName))
+                return null;
+            List<CheckInfo> result = new List<CheckInfo>();
+            foreach (var kv in _cacheCheckInfoDic)
+            {
+                CheckInfo checkInfo = kv.Value;
+                List<string> groups = checkInfo.GetGroups();
+                if (checkInfo.CheckNewIn == CheckNewIn.Dispose)
+                    result.Add(checkInfo);
+                else
+                {
+                    if (groups != null)
+                    {
+                        if (groups.Contains(groupName))
+                        {
+                            result.Add(checkInfo);
+                            break;
+                        }
+                    }
+                }
+            }
+            return result;
+        }
     }
 }

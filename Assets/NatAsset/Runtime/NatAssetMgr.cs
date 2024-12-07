@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -57,6 +58,23 @@ namespace NATFrameWork.NatAsset.Runtime
         public static AssetHandle LoadAssetAsync<T>(string targetPath, Priority priority = Priority.Low)
         {
             return CoreLoaderMgr.LoadAssetAsync(targetPath, typeof(T), priority);
+        }
+
+        /// <summary>
+        /// 异步批量加载，该接口只允许同类的资源加载，不同类型的请使用 NatAssetMgr.GetBatchAssetHandle()
+        /// </summary>
+        /// <param name="targetPaths"></param>
+        /// <param name="type"></param>
+        /// <param name="priority"></param>
+        /// <returns></returns>
+        public static BatchAssetHandle LoadAssetAsync(List<string> targetPaths, Type type, Priority priority = Priority.Low)
+        {
+            return CoreLoaderMgr.LoadAssetAsync(targetPaths, type, priority);
+        }
+
+        public static BatchAssetHandle GetBatchAssetHandle()
+        {
+            return CoreLoaderMgr.GetBatchAssetHandle();
         }
 
         /// <summary>
@@ -150,7 +168,7 @@ namespace NATFrameWork.NatAsset.Runtime
         /// <returns></returns>
         public static void UnLoadSceneAsync(SceneHandle sceneHandle)
         {
-            sceneHandle.Unload();
+            sceneHandle.Dispose();
         }
 
         ///// <summary>

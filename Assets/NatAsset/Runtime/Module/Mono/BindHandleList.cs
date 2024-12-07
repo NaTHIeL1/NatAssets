@@ -12,7 +12,7 @@ namespace NATFrameWork.NatAsset.Runtime
             {
                 for (int i = 0; i < assetHandles.Count; i++)
                 {
-                    assetHandles[i].Unload();
+                    assetHandles[i].Dispose();
                 }
                 assetHandles.Clear();
             }

@@ -15,24 +15,22 @@ namespace NATFrameWork.NatAsset.Runtime
         private string _tempLocalFilePath = string.Empty;
         //todo:bundleMainfest参数
         private BundleManifest _updateManifest;
+        private BundleDownLoadTaskParam _bundleDownLoadTaskParam;
 
-        internal void SetWebDownLoadTaskParam(string downLoadUri, string localFilePath, string tempLocalFilePath, BundleManifest bundleManifest)
-        {
-            _downLoadUri = downLoadUri;
-            _localFilePath = localFilePath;
-            _tempLocalFilePath = tempLocalFilePath;
-            _updateManifest = bundleManifest;
-        }
+        private ulong _lastRecordByteLength = 0;
+        private ulong _deltaRecordByteLength = 0;
+
+        internal ulong DeltaRecordByteLength => _deltaRecordByteLength;
 
         public override float Progress
         {
             get
             {
-                if (_operation == null)
+                if (_operation == null || _updateManifest == null)
                 {
                     return 0;
                 }
-                return _operation.webRequest.downloadProgress;
+                return _operation.webRequest.downloadProgress / _updateManifest.Length;
             }
             protected set => base.Progress = value;
         }
@@ -41,6 +39,13 @@ namespace NATFrameWork.NatAsset.Runtime
         protected override void OnCreate()
         {
             _taskType = TaskType.Web;
+            _bundleDownLoadTaskParam = (BundleDownLoadTaskParam)_taskParam;
+
+            string fileName = _bundleDownLoadTaskParam.TaskName;
+            _downLoadUri = Path.Combine(NatAssetSetting.AssetServerURL, fileName);
+            _localFilePath = Path.Combine(NatAssetSetting.ReadWritePath, fileName);
+            _tempLocalFilePath = Path.Combine(NatAssetSetting.DownLoadPath, fileName + NatAssetSetting.CacheExtension);
+            _updateManifest = _bundleDownLoadTaskParam.BundleManifest;
         }
 
         internal override void TaskUpdate()
@@ -68,6 +73,7 @@ namespace NATFrameWork.NatAsset.Runtime
                         lastFileLength = 0;
                     }
                 }
+                _lastRecordByteLength = lastFileLength;
 
                 _webRequest.downloadHandler = new DownloadHandlerFile(_tempLocalFilePath, lastFileLength > 0);
                 _operation = _webRequest.SendWebRequest();
@@ -77,6 +83,10 @@ namespace NATFrameWork.NatAsset.Runtime
 
             if (TaskState == TaskState.Running)
             {
+                ulong nowRecordByteLength = _operation.webRequest.downloadedBytes;
+                _deltaRecordByteLength = nowRecordByteLength - _lastRecordByteLength;
+                _lastRecordByteLength = nowRecordByteLength;
+
                 if (_operation.isDone)
                 {
                     DownLoaded();
@@ -173,6 +183,8 @@ namespace NATFrameWork.NatAsset.Runtime
             if (_webRequest != null)
                 _webRequest.Dispose();
             _retryCount = 0;
+            _lastRecordByteLength = 0;
+            _deltaRecordByteLength = 0;
             _webRequest = null;
             _operation = null;
             _updateManifest = null;

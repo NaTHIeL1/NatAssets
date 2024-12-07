@@ -30,5 +30,26 @@ namespace NATFrameWork.NatAsset.Runtime
 
             return targetGUID;
         }
+
+        internal static string GetTargetGUID(AssetInfo assetInfo)
+        {
+            Dictionary<string, string> targetDic;
+            Type type = assetInfo.AssetType;
+            string name = assetInfo.InfoNameGUID;
+            if (!_typeStringDic.TryGetValue(type, out targetDic))
+            {
+                targetDic = new Dictionary<string, string>();
+                _typeStringDic.Add(type, targetDic);
+            }
+
+            string targetGUID = string.Empty;
+            if (!targetDic.TryGetValue(name, out targetGUID))
+            {
+                targetGUID = $"{name}-{type.FullName}";
+                targetDic.Add(name, targetGUID);
+            }
+
+            return targetGUID;
+        }
     }
 }

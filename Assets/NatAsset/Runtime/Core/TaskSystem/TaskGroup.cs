@@ -150,5 +150,12 @@ namespace NATFrameWork.NatAsset.Runtime
                 }
             }
         }
+
+        internal int GetTaskNum()
+        {
+            if(taskDic!= null)
+                return taskDic.Count;
+            return 0;
+        }
     }
 }

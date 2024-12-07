@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -14,7 +13,6 @@ namespace NATFrameWork.NatAsset.Runtime
 #endif
         //资源字典
         private static Dictionary<string, AssetInfo> _assetDic = new Dictionary<string, AssetInfo>(1000);
-        private static Dictionary<Type, AssetTypeGroup> _assetGroupDic = new Dictionary<Type, AssetTypeGroup>(1000);
         //Bundle字典
         private static Dictionary<string, BundleInfo> _bundleDic = new Dictionary<string, BundleInfo>(1000);
 
@@ -93,7 +91,7 @@ namespace NATFrameWork.NatAsset.Runtime
             _manifestLoader.StopLoader();
             SetNatAssetState(NatAssetState.Release);
             _assetDic.Clear();
-            _assetGroupDic.Clear();
+            //_assetGroupDic.Clear();
             _sceneDic.Clear();
             _bundleDic.Clear();
             //UnLoadMainfest();
@@ -105,8 +103,8 @@ namespace NATFrameWork.NatAsset.Runtime
             foreach (KeyValuePair<string, AssetInfo> keyValuePair in _assetDic)
                 keyValuePair.Value.CollectionMark();
 
-            foreach(KeyValuePair<Type,AssetTypeGroup> keyValuePair in _assetGroupDic)
-                keyValuePair.Value.CollectionMark();
+            //foreach(KeyValuePair<Type,AssetTypeGroup> keyValuePair in _assetGroupDic)
+            //    keyValuePair.Value.CollectionMark();
             foreach (KeyValuePair<int, SceneInfo> keyValuePair in _sceneDic)
                 keyValuePair.Value.CollectionMark();
 
@@ -124,9 +122,10 @@ namespace NATFrameWork.NatAsset.Runtime
         /// <returns></returns>
         internal static AssetInfo GetAsset(string path, Type type)
         {
-            if(_assetGroupDic.TryGetValue(type, out AssetTypeGroup group))
+            string guid = TypeStringGUIDPool.GetTargetGUID(type, path);
+            if (_assetDic.TryGetValue(guid, out AssetInfo assetInfo))
             {
-                return group.GetAssetInfo(path);
+                return assetInfo;
             }
             return null;
         }
@@ -153,27 +152,19 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal static void AddAssetInfo(AssetInfo assetInfo)
         {
-            Type type = assetInfo.AssetType;
-            AssetTypeGroup group;
-            if (_assetGroupDic.TryGetValue(type, out group))
+            string guid = TypeStringGUIDPool.GetTargetGUID(assetInfo);
+            if (!_assetDic.ContainsKey(guid))
             {
-                group.AddAssetInfo(assetInfo);
-            }
-            else
-            {
-                group = new AssetTypeGroup();
-                _assetGroupDic.Add(type, group);
-                group.AddAssetInfo(assetInfo);
+                _assetDic.Add(guid, assetInfo);
             }
         }
 
         internal static void RemoveAssetInfo(AssetInfo assetInfo)
         {
-            Type type = assetInfo.AssetType;
-            AssetTypeGroup group;
-            if(_assetGroupDic.TryGetValue(type,out group))
+            string guid = TypeStringGUIDPool.GetTargetGUID(assetInfo);
+            if (!_assetDic.ContainsKey(guid))
             {
-                group.RemoveAssetInfo(assetInfo);
+                _assetDic.Remove(guid);
             }
         }
 

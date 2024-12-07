@@ -188,7 +188,7 @@ namespace NATFrameWork.NatAsset.Runtime
                     }
                 }
             }
-            
+
             Dictionary<string, string> _bundleMD5Dic = new Dictionary<string, string>(1000);
 
             Dictionary<string, BundleManifest> _source = _manifestLoader.GetBundleManifestDic();
@@ -199,7 +199,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal static string GetBundleMD5(string bundlePath)
         {
             BundleManifest bundleManifest = null;
-            if(_manifestLoader != null)
+            if (_manifestLoader != null)
                 bundleManifest = _manifestLoader.GetBundleManifest(bundlePath);
             if (bundleManifest != null)
             {
@@ -222,7 +222,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal static uint GetBundleCRC(string bundlePath)
         {
             BundleManifest manifest = null;
-            if(_manifestLoader != null)
+            if (_manifestLoader != null)
                 manifest = _manifestLoader.GetBundleManifest(bundlePath);
             if (manifest != null)
                 return manifest.CRC;
@@ -277,12 +277,39 @@ namespace NATFrameWork.NatAsset.Runtime
             return false;
         }
 
+        internal static List<string> GetBundleAllAssetsPath(string bundlePath)
+        {
+            BundleManifest manifest = null;
+            if (_manifestLoader != null)
+                manifest = _manifestLoader.GetBundleManifest(bundlePath);
+            if (manifest != null)
+            {
+                List<AssetManifest> assets = manifest.Assets;
+                if (assets != null)
+                {
+                    List<string> strs = new List<string>(assets.Count);
+                    for (int i = 0; i < assets.Count; i++)
+                    {
+                        AssetManifest asset = assets[i];
+                        strs.Add(asset.AssetName);
+                    }
+                    return strs;
+                }
+            }
+            return null;
+        }
+
         internal static AssetManifest GetAssetManifest(string assetPath)
         {
             AssetManifest manifest = null;
             if (_manifestLoader != null)
                 manifest = _manifestLoader.GetAssetManifest(assetPath);
             return manifest;
+        }
+
+        internal static List<BundleManifest> GetReadWriteManifest()
+        {
+            return null;
         }
     }
 }
