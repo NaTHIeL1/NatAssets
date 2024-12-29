@@ -287,7 +287,8 @@ namespace NATFrameWork.NatAsset.Editor
                 result.Add(bundleBuildInfo);
 
                 //构建场景资源额外包
-                string bundlePath = bundleBuildInfo.CompletePath + "_extra";
+                string[] spliteName = bundleBuildInfo.CompletePath.Split('.');
+                string bundlePath = spliteName[0] + "_extra";
                 BundleBuildInfo normalBundleInfo = new BundleBuildInfo(bundleBuildInfo.EditorPath, bundlePath,
                     bundleBuildInfo.BundleGroup, bundleBuildInfo.BundleEncrypt);
                 normalBundleInfo.AssetBuildInfos = commonInfo;
