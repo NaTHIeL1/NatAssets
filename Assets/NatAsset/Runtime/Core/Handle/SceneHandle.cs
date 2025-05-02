@@ -148,7 +148,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
         public HandleAwait<SceneHandle> GetAwaiter()
         {
-            return new HandleAwait<SceneHandle>();
+            return new HandleAwait<SceneHandle>(this);
         }
     }
 }
