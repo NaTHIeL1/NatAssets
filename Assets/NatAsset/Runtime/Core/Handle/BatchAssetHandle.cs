@@ -36,6 +36,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 _handleState = HandleState.Finish;
                 _handleResult = HandleResult.Success;
                 OnLoadedCallback?.Invoke(_assetHandles);
+                AsyncStateCallback?.Invoke();
             }
         }
 
@@ -109,6 +110,11 @@ namespace NATFrameWork.NatAsset.Runtime
         public void RemoveAssetHandle(AssetHandle assetHandle)
         {
             _assetHandles.Remove(assetHandle);
+        }
+        
+        public HandleAwait<BatchAssetHandle> GetAwaiter()
+        {
+            return new HandleAwait<BatchAssetHandle>(this);
         }
     }
 }

@@ -114,7 +114,7 @@ namespace NATFrameWork.NatAsset.Runtime
             }
             else
             {
-                throw new Exception("╣х╢ЩеДжцнд╪ЧЁУй╪╩╞мЙЁи╨Сты╪стьвйт╢");
+                throw new Exception("Г╜┴Е╬┘И┘█Г╫╝Ф√┤Д╩╤Е┬²Е╖▀Е▄√Е╝▄Ф┬░Е░▌Е├█Е┼═Х╫╫Х╣└Ф╨░");
             }
         }
     }

@@ -119,6 +119,8 @@ namespace NATFrameWork.NatAsset.Editor
         {
             List<IVirtualFile> results = null;
             DirectoryInfo directoryInfo = new DirectoryInfo(Path.Combine(FileName));
+            if (!directoryInfo.Exists)
+                return results;
             FileSystemInfo[] fileSystemInfos = directoryInfo.GetFileSystemInfos();
             for (int i = 0; i < fileSystemInfos.Length; i++)
             {
