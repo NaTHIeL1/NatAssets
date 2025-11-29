@@ -132,6 +132,10 @@ namespace NATFrameWork.NatAsset.Runtime
             {
                 File.Delete(_localFilePath);
             }
+
+            string path = Path.GetDirectoryName(_localFilePath);
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
             File.Move(_tempLocalFilePath , _localFilePath);
             _taskResult = TaskResult.Success;
             //todo：告知外部该任务已执行完成

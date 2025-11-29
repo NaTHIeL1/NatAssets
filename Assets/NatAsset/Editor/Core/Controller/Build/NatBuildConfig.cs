@@ -44,7 +44,8 @@ namespace NATFrameWork.NatAsset.Editor
             {
                 Directory.CreateDirectory(outPut);
             }
-
+            if (!ReflectBuild.BeforeBuildExtension())
+                return;
             Dictionary<string, BundleBuildInfo> bundleBuildInfos = GetBundleInsBuildDic(natBuildParamters);
             AssetBundleBuild[] assetBundleBuilds =
                 NatAssetBuildUtil.SwitchBBIsToABBs(natBuildParamters.BundleBuildInfos);
@@ -133,7 +134,7 @@ namespace NATFrameWork.NatAsset.Editor
                 BundleBuildInfo data = keyValue.Value;
                 if (!tempBundleManifestDic.ContainsKey(data.BundlePath))
                 {
-                    BundleManifest temp = BuildBundleItemNode(data, excludeFilePaths);
+                    BundleManifest temp = BuildBundleItemNode(data, excludeFilePaths, path);
                     tempBundleManifestDic.Add(data.BundlePath, temp);
                 }
                 string[] dependBundles = Mainfest.GetAllDependencies(data.BundlePath);
@@ -147,7 +148,7 @@ namespace NATFrameWork.NatAsset.Editor
                             continue;
                         }    
                         BundleBuildInfo dependOutput = bundleInventoryBuilds[dependBundles[i]];
-                        BundleManifest dependData = BuildBundleItemNode(dependOutput, excludeFilePaths);
+                        BundleManifest dependData = BuildBundleItemNode(dependOutput, excludeFilePaths, path);
                         tempBundleManifestDic.Add(dependOutput.BundlePath, dependData);
                     }
                 }
@@ -245,7 +246,7 @@ namespace NATFrameWork.NatAsset.Editor
         /// <param name="excludeList"></param>
         /// <returns></returns>
         //构建BundleNode中的子节点
-        private static BundleManifest BuildBundleItemNode(BundleBuildInfo data, List<string> excludeList)
+        private static BundleManifest BuildBundleItemNode(BundleBuildInfo data, List<string> excludeList, string outPutPath)
         {
             BundleManifest temp = new BundleManifest();
             temp.MD5 = data.MD5;
@@ -267,6 +268,7 @@ namespace NATFrameWork.NatAsset.Editor
             temp.Dependencies = dependence;
             temp.IsAppendHash = NatAssetEditorUtil.AppendHash;
             temp.BundleEncrypt = NatAssetEditorUtil.SwitchBundleEncrypt(data.BundleEncrypt);
+            temp.Length = (ulong)new FileInfo(Path.Combine(outPutPath, data.BundlePath)).Length;
             List<AssetManifest> assets = new List<AssetManifest>();
             BuildAssetMainfest(data, assets, excludeList);
             temp.Assets = assets;

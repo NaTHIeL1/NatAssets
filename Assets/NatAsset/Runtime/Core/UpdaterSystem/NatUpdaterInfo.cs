@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
     public class NatUpdaterInfo
     {
-        private readonly static ulong manifestLength = 1;
+        public NatAssetManifest NatAssetManifest => _natAssetManifest;
+        private NatAssetManifest _natAssetManifest;
+        internal ulong manifestLength = 1;
         /// <summary>
         /// 是否检查成功
         /// </summary>
@@ -18,12 +21,28 @@ namespace NATFrameWork.NatAsset.Runtime
         /// <summary>
         /// 需要更新的资源包总数量
         /// </summary>
-        public int TotalCount { get; internal set; }
+        public int TotalCount
+        {
+            get => CheckInfoDic.Count;
+        }
 
         /// <summary>
         /// 需要更新的资源包总长度
         /// </summary>
-        public ulong TotalLength { get; internal set; }
+        public ulong TotalLength
+        {
+            get
+            {
+                ulong result = 0;
+                foreach (KeyValuePair<string,CheckInfo> checkInfo in CheckInfoDic)
+                {
+                    result += checkInfo.Value.RemoteManifest.Length;
+                }
+
+                result += manifestLength;
+                return result;
+            }
+        }
 
         public NatUpdaterInfo() { }
 
@@ -31,6 +50,11 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             Success = success;
             Error = error;
+        }
+
+        internal void SetRemoteManifest(NatAssetManifest mainfest)
+        {
+            _natAssetManifest = mainfest;
         }
 
         //有差异的资源列表
@@ -190,7 +214,6 @@ namespace NATFrameWork.NatAsset.Runtime
                             if (groups.Contains(groupsName[i]))
                             {
                                 result.Add(checkInfo);
-                                break;
                             }
                         }
                     }
@@ -217,12 +240,29 @@ namespace NATFrameWork.NatAsset.Runtime
                         if (groups.Contains(groupName))
                         {
                             result.Add(checkInfo);
-                            break;
                         }
                     }
                 }
             }
             return result;
         }
+
+        public List<string> GetGroups()
+        {
+            List<string> groups = new List<string>();
+            foreach (KeyValuePair<string,CheckInfo> keyValuePair in CheckInfoDic)
+            {
+                var list = keyValuePair.Value.GetGroups();
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (!groups.Contains(list[i]))
+                    {
+                        groups.Add(list[i]);
+                    }
+                }
+            }
+
+            return groups;
+        } 
     }
 }

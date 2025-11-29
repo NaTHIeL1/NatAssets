@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -102,10 +104,10 @@ namespace NATFrameWork.NatAsset.Runtime
         /// </summary>
         /// <param name="natUpdaterInfo"></param>
         /// <param name="groups"></param>
-        internal static UpdateHandle UpdateGroups(NatUpdaterInfo natUpdaterInfo, string[] groups)
+        internal static UpdateHandles UpdateGroups(NatUpdaterInfo natUpdaterInfo, string[] groups)
         {
             if (groups == null) return null;
-            //UpdateHandles updateHandles = UpdateHandles.Create()
+            UpdateHandles updateHandles = UpdateHandles.Create();
             for (int i = 0; i < groups.Length; i++)
             {
                 string group = groups[i];
@@ -114,16 +116,62 @@ namespace NATFrameWork.NatAsset.Runtime
                     GroupDownLoadProviderParam groupDownLoadProviderParam =
                         new GroupDownLoadProviderParam(group, group, natUpdaterInfo);
                     baseProvider = GroupDownLoadProvider.Create<GroupDownLoadProvider>(groupDownLoadProviderParam, Priority.Top);
-                    UpdateHandles updateHandle1 = UpdateHandles.Create(group);
+                    UpdateHandle updateHandle1 = UpdateHandle.Create(group);
+                    updateHandles.AddUpdateHandle(updateHandle1);
                     TaskSystem.AddNetProvider(baseProvider);
                     baseProvider.AddHandle(updateHandle1, Priority.Top, RunModel.Async);
                 }
             }
-            return null;
+            return updateHandles;
+        }
+
+        
+        internal static UpdateHandles UpdateAllGroup(NatUpdaterInfo natUpdaterInfo)
+        {
+            if (natUpdaterInfo == null || !natUpdaterInfo.Success)
+                return null;
+            List<string> groups = natUpdaterInfo.GetGroups();
+            if (groups == null) return null;
+            return UpdateGroups(natUpdaterInfo, groups.ToArray());
         }
 
         /// <summary>
-        /// 返回单位为byte
+        /// 更新本地资源文件
+        /// </summary>
+        /// <param name="natUpdaterInfo"></param>
+        /// <param name="updateHandle"></param>
+        internal static void UpdateNatManifest(NatUpdaterInfo natUpdaterInfo, UpdateHandle updateHandle)
+        {
+            
+        }
+        
+        /// <summary>
+        /// 更新本地资源文件
+        /// </summary>
+        /// <param name="natUpdaterInfo"></param>
+        /// <param name="updateHandles"></param>
+        internal static void UpdateNatManifest(NatUpdaterInfo natUpdaterInfo, UpdateHandles updateHandles)
+        {
+            updateHandles.OnLoaded += (handles) =>
+            {
+                string fullPath = Path.Combine(NatAssetSetting.ReadWritePath, NatAssetSetting.ConfigName);
+                if (natUpdaterInfo.NatAssetManifest == null)
+                    return;
+                var binaryArray = natUpdaterInfo.NatAssetManifest.SerializeToBinary();
+                if (Directory.Exists(fullPath))
+                    Directory.Delete(fullPath);
+                using (FileStream fs = File.Create(fullPath))
+                {
+                    using (BinaryWriter bw = new BinaryWriter(fs))
+                    {
+                        bw.Write(binaryArray);
+                    }
+                }
+            };
+        }
+        
+        /// <summary>
+        /// 返回单位为byte/sencond
         /// </summary>
         /// <returns></returns>
         internal static ulong TotalDownLoadRate()
@@ -131,9 +179,20 @@ namespace NATFrameWork.NatAsset.Runtime
             return _downLoadRate;
         }
 
+        /// <summary>
+        /// 返回单位为byte/sencond
+        /// </summary>
+        /// <param name="groupName"></param>
+        /// <returns></returns>
         internal static ulong GroupDownLoadRate(string groupName)
         {
             //todo:计算当前Group的速率
+            if (TaskSystem.TryGetNetProvider(groupName, out var baseProvider))
+            {
+                GroupDownLoadProvider groupDownLoadProvider = baseProvider as GroupDownLoadProvider;
+                if (groupDownLoadProvider != null)
+                    return groupDownLoadProvider.DownLoadRate;
+            }
             return 0;
         }
 
@@ -143,11 +202,6 @@ namespace NATFrameWork.NatAsset.Runtime
         }
 
         internal static void UpdateBundleByBundleMainfest(string group, BundleManifest bundleManifest, Action<bool> callback, Priority priority = Priority.High)
-        {
-
-        }
-
-        internal static void StopGroupUpdate(string group)
         {
 
         }

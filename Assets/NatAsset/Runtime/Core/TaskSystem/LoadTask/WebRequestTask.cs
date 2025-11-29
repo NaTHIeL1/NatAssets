@@ -58,20 +58,16 @@ namespace NATFrameWork.NatAsset.Runtime
 
             if (TaskState == TaskState.Running)
             {
-
                 if (_operation.isDone)
                 {
                     if (_webRequest.result == UnityWebRequest.Result.Success)
                     {
-                        _callback(TaskName, true, _webRequest);
                         SetTaskState(TaskState.End);
                     }
                     else
                     {
-                        //重新发起请求
                         if (!TryToReSend())
                         {
-                            _callback(TaskName, false, _webRequest);
                             SetTaskState(TaskState.End);
                         }
                     }
@@ -80,6 +76,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
             if (TaskState == TaskState.End)
             {
+                _callback(TaskGUID, true, _webRequest);
             }
         }
 

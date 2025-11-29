@@ -5,22 +5,48 @@ using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
-    internal class UpdateHandles : IHandle
+    public class UpdateHandles : IHandle,IOperation
     {
         private List<UpdateHandle> _updateHandles = new List<UpdateHandle>();
         private GroupDownLoadProvider _downLoadProvider;
         private List<string> _failList;
-
+        bool IOperation.IsDone
+        {
+            get => IsDone;
+            set { }
+        }
         private Action<List<UpdateHandle>> OnUpdatedCallback;
 
         public List<string> FailList => _failList;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static UpdateHandles Create(string name)
+        internal static UpdateHandles Create()
         {
-            UpdateHandles assetHandle = ReferencePool.Get<UpdateHandles>();
-            assetHandle.CreateHandle(name);
-            return assetHandle;
+            UpdateHandles updateHandles = ReferencePool.Get<UpdateHandles>();
+            updateHandles.CreateHandle(nameof(UpdateHandles));
+            OperationSystem.AddOperation(updateHandles);
+            return updateHandles;
+        }
+        
+        public void OnUpdate()
+        {
+            bool isComplete = true;
+            
+            for (int i = 0; i < _updateHandles.Count; i++)
+            {
+                if (!_updateHandles[i].IsDone)
+                {
+                    isComplete = false;
+                    break;
+                }
+            }
+            if (isComplete)
+            {
+                _handleState = HandleState.Finish;
+                _handleResult = HandleResult.Success;
+                OnUpdatedCallback?.Invoke(_updateHandles);
+                AsyncStateCallback?.Invoke();
+            }
         }
 
         protected override void OnClear()
@@ -42,15 +68,22 @@ namespace NATFrameWork.NatAsset.Runtime
             {
                 Cancel();
             }
+            
+            for (int i = 0; i < _updateHandles.Count; i++)
+            {
+                UpdateHandle updateHandle = _updateHandles[i];
+                updateHandle.Dispose();
+            }
+            CommonHandleReleaseLogic();
+            OperationSystem.RemoveOperation(this);
         }
 
         protected override bool CanBeReference()
         {
             return false;
         }
-
-        //todo:完成的判断条件需要重新修订
-        public event Action<List<UpdateHandle>> OnUpdated
+        
+        public event Action<List<UpdateHandle>> OnLoaded
         {
             add
             {
@@ -75,6 +108,21 @@ namespace NATFrameWork.NatAsset.Runtime
                 }
                 OnUpdatedCallback -= value;
             }
+        }
+        
+        public void AddUpdateHandle(UpdateHandle updateHandle)
+        {
+            _updateHandles.Add(updateHandle);
+        }
+
+        public void RemoveUpdateHandle(UpdateHandle updateHandle)
+        {
+            _updateHandles.Remove(updateHandle);
+        }
+        
+        public HandleAwait<UpdateHandles> GetAwaiter()
+        {
+            return new HandleAwait<UpdateHandles>(this);
         }
     }
 }

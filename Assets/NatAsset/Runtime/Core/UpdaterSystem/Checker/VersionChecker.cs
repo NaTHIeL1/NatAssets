@@ -17,6 +17,8 @@ namespace NATFrameWork.NatAsset.Runtime
         private static bool readWriteLoaded = false;
 
         private static bool _isChecking = false;
+        private static ulong _mainfestLength = 0;
+        private static NatAssetManifest _remoteNatAssetManifest = null;
         private static Action<NatUpdaterInfo> _versionCallBack = null;
 
         private static Dictionary<string, CheckInfo> _checkInfoDic = new Dictionary<string, CheckInfo>();
@@ -26,6 +28,8 @@ namespace NATFrameWork.NatAsset.Runtime
                 return;
             _isChecking = true;
             _versionCallBack = VersionCallBack;
+            _mainfestLength = 0;
+            _remoteNatAssetManifest = null;
 
             string remotePath = Path.Combine(NatAssetSetting.AssetServerURL, NatAssetSetting.ConfigName);
             string readOnlyPath = Path.Combine(NatAssetSetting.ReadOnlyPath, NatAssetSetting.ConfigName);
@@ -42,6 +46,8 @@ namespace NATFrameWork.NatAsset.Runtime
             CoreLoaderMgr.DisposeWebRequest(_taskReadOnly );
             CoreLoaderMgr.DisposeWebRequest(_taskReadWrite );
 
+            _mainfestLength = 0;
+            _remoteNatAssetManifest = null;
             _isChecking = false;
             _versionCallBack = null;
             _checkInfoDic.Clear();
@@ -59,10 +65,11 @@ namespace NATFrameWork.NatAsset.Runtime
             if (taskID != _taskReadWrite)
                 return;
             
-            if(!success)
+            if(!success || request.downloadHandler.data == null)
             {
                 readWriteLoaded = true;
                 Debug.LogError($"未加载到读写区资源：{request.error}");
+                CheckComplete();
                 return;
             }
 
@@ -90,10 +97,11 @@ namespace NATFrameWork.NatAsset.Runtime
             if (taskID != _taskReadOnly)
                 return;
             
-            if(!success)
+            if(!success || request.downloadHandler.data == null)
             {
                 readOnlyLoaded = true;
                 Debug.LogError($"未加载到只读取资源：{request.error}");
+                CheckComplete();
                 return;
             }
 
@@ -121,7 +129,7 @@ namespace NATFrameWork.NatAsset.Runtime
             if (taskID != _taskRemote)
                 return;
             
-            if (!success)
+            if (!success || request.downloadHandler.data == null)
             {
                 Debug.LogError($"未加载到远端资源：{request.error}");
                 NatUpdaterInfo natUpdaterInfo = new NatUpdaterInfo(success, request.error);
@@ -131,7 +139,9 @@ namespace NATFrameWork.NatAsset.Runtime
                 return;
             }
 
+            _mainfestLength = (ulong)request.downloadHandler.data.Length;
             NatAssetManifest natAssetManifest = NatAssetManifest.DeserializeFromBinary(request.downloadHandler.data);
+            _remoteNatAssetManifest = natAssetManifest;
             if(natAssetManifest == null)
             {
                 ManifestLoadFail("远端配置序列化失败");
@@ -158,6 +168,9 @@ namespace NATFrameWork.NatAsset.Runtime
                 RefreshCheckInfo();
 
                 NatUpdaterInfo natUpdaterInfo = new NatUpdaterInfo(true, string.Empty);
+                natUpdaterInfo.manifestLength = _mainfestLength;
+                if(_remoteNatAssetManifest != null)
+                    natUpdaterInfo.SetRemoteManifest(_remoteNatAssetManifest);
                 //检测资源是否需要更新
                 foreach (var kv in _checkInfoDic)
                 {
@@ -188,6 +201,7 @@ namespace NATFrameWork.NatAsset.Runtime
             {
                 CheckInfo newInfo = new CheckInfo(checkName);
                 _checkInfoDic.Add(checkName, newInfo);
+                info = newInfo;
             }
             return info;
         }

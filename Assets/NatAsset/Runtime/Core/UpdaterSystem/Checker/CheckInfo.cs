@@ -109,7 +109,8 @@ namespace NATFrameWork.NatAsset.Runtime
             {
                 _checkNewIn = CheckNewIn.ReadWrite;
                 _needRemoveAsset = false;
-                _needUpdateManifest = ReadOnlyManifest.NeedUpdateManifest(RemoteManifest);
+                _needUpdateManifest =
+                    ReadOnlyManifest == null ? false : ReadOnlyManifest.NeedUpdateManifest(RemoteManifest);
                 return;
             }
 

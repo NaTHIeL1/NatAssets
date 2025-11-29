@@ -16,6 +16,7 @@ namespace NATFrameWork.NatAsset.Runtime
             OperationSystem.Init();
             TaskSystem.Init();
             SceneSystem.Init();
+            UpdaterSystem.Init();
             RuntimeData.Init(modelLoader);
         }
 
@@ -23,11 +24,13 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             SceneSystem.Update();
             TaskSystem.Update();
+            UpdaterSystem.Update();
             OperationSystem.Update();
         }
 
         internal static void Release()
         {
+            UpdaterSystem.Release();
             SceneSystem.Release();
             TaskSystem.Release();
             OperationSystem.Release();

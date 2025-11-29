@@ -94,7 +94,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 //编辑器下模拟资源更新
                 if (string.IsNullOrEmpty(_readWritePath))
                 {
-                    string path = Path.Combine(Application.dataPath, _sandBoxFolder);
+                    string path = Path.Combine(EditorLoadPath, _sandBoxFolder);
                     _readWritePath = FileExtend.NormalizePath(path);
                     CreateDirectory(_readWritePath);
                 }
@@ -144,7 +144,7 @@ namespace NATFrameWork.NatAsset.Runtime
 #if UNITY_EDITOR
                 if (string.IsNullOrEmpty(_cacheDownLoadPath))
                 {
-                    string downLoadPath = Path.Combine(Application.dataPath, _tempCacheFolder);
+                    string downLoadPath = Path.Combine(EditorLoadPath, _tempCacheFolder);
                     _cacheDownLoadPath = FileExtend.NormalizePath(downLoadPath);
                     CreateDirectory(_cacheDownLoadPath);
                 }

@@ -68,19 +68,6 @@ namespace NATFrameWork.NatAsset.Runtime
                     case DownLoadState.Running:
                         if (_checkInfos == null)
                             _checkInfos = _natUpdaterInfo.GetCheckInfoByGroup(_groupName);
-                        //有剩余可分配任务时分配任务
-                        if (_netLoadTaskRunner.GetTaskNum() < NatAssetSetting.TaskFrameLimitNetLoad)
-                        {
-                            for (; recordIndex < _checkInfos.Count &&
-                                _netLoadTaskRunner.GetTaskNum() < NatAssetSetting.TaskFrameLimitNetLoad;
-                                recordIndex++)
-                            {
-                                CheckInfo checkInfo = _checkInfos[recordIndex];
-                                CommonWebDownLoadTaskLogic(checkInfo, _netLoadTaskRunner, Priority, out BaseTask basetask);
-                                if (basetask != null)
-                                    SetWebDownLoadTaskLock(basetask.TaskGUID, basetask);
-                            }
-                        }
                         //检测是否有任务完成可释放
                         for (int i = 0; i < _webDownLoadTask.Count; i++)
                         {
@@ -95,6 +82,18 @@ namespace NATFrameWork.NatAsset.Runtime
                                 }
                                 SetWebDownLoadTaskUnLock(baseTask);
                                 i--;
+                            }
+                        }
+                        
+                        //有剩余可分配任务时分配任务
+                        if (_netLoadTaskRunner.GetTaskNum() < NatAssetSetting.TaskFrameLimitNetLoad)
+                        {
+                            for (; recordIndex < _checkInfos.Count &&
+                                _netLoadTaskRunner.GetTaskNum() < NatAssetSetting.TaskFrameLimitNetLoad;
+                                recordIndex++)
+                            {
+                                CheckInfo checkInfo = _checkInfos[recordIndex];
+                                CommonWebDownLoadTaskLogic(checkInfo, _netLoadTaskRunner, Priority, out BaseTask basetask);
                             }
                         }
 
@@ -171,6 +170,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 if (baseTask.CheckCanDestroy())
                     baseTask.CancelTask();
             }
+            
             _downLoadRate = 0;
             _downLoadLastLength = 0;
             _downLoadTotalLength = 0;
@@ -218,6 +218,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
         protected void CommonWebDownLoadTaskLogic(CheckInfo checkInfo, TaskRunner taskRunner, Priority priority, out BaseTask basetask)
         {
+            basetask = null;
             if (checkInfo != null)
             {
                 if (checkInfo.CheckNewIn == CheckNewIn.Remote)
@@ -227,7 +228,8 @@ namespace NATFrameWork.NatAsset.Runtime
                     CommonTaskLogic<BundleDownloadTask>(param, taskRunner, priority, out basetask);
                 }
             }
-            basetask = null;
+            if (basetask != null)
+                SetWebDownLoadTaskLock(basetask.TaskGUID, basetask);
         }
 
         protected void SetWebDownLoadTaskLock(string fileName, BaseTask baseTask)
@@ -235,7 +237,6 @@ namespace NATFrameWork.NatAsset.Runtime
             if (_webDownLoadTask == null)
                 _webDownLoadTask = new List<BaseTask>();
             _webDownLoadTask.Add(baseTask);
-            baseTask.AddRefCount();
         }
 
         protected void SetWebDownLoadTaskUnLock(BaseTask baseTask)

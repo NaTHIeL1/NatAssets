@@ -193,5 +193,79 @@ namespace NATFrameWork.NatAsset.Runtime
         //{
         //    CoreLoaderMgr.DisposeWebRequest(taskGuid);
         //}
+
+        /// <summary>
+        /// 返回单位为byte/sencond
+        /// </summary>
+        /// <returns></returns>
+        public static ulong GetTotalDownLoadRate()
+        {
+            return UpdaterSystem.TotalDownLoadRate();
+        }
+
+        /// <summary>
+        /// 返回单位为byte/sencond
+        /// </summary>
+        /// <param name="groupName"></param>
+        /// <returns></returns>
+        public static ulong GetGroupDownLoadRate(string groupName)
+        {
+            return UpdaterSystem.GroupDownLoadRate(groupName);
+        }
+
+        /// <summary>
+        /// 开始校验可以更新的内容
+        /// </summary>
+        /// <param name="callback"></param>
+        public static void CheckAssetVersion(Action<NatUpdaterInfo> callback)
+        {
+            UpdaterSystem.StartCheckAssetVersion(callback);
+        }
+
+        /// <summary>
+        /// 停止校验
+        /// </summary>
+        public static void StopCheckAssetVersion()
+        {
+            UpdaterSystem.StopCheckAssetVersion();
+        }
+
+        // /// <summary>
+        // /// 更新目标group资源组
+        // /// </summary>
+        // /// <param name="natUpdaterInfo"></param>
+        // /// <param name="group"></param>
+        // /// <returns></returns>
+        // public static UpdateHandle UpdateGroup(NatUpdaterInfo natUpdaterInfo, string group)
+        // {
+        //     return UpdaterSystem.UpdateGroup(natUpdaterInfo, group);
+        // }
+        //
+        // /// <summary>
+        // /// 更新多个目标group资源组
+        // /// </summary>
+        // /// <param name="natUpdaterInfo"></param>
+        // /// <param name="groups"></param>
+        // /// <returns></returns>
+        // public static UpdateHandles UpdateGroups(NatUpdaterInfo natUpdaterInfo, string[] groups)
+        // {
+        //     return UpdaterSystem.UpdateGroups(natUpdaterInfo, groups);
+        // }
+        
+        /// <summary>
+        /// 全量更新
+        /// </summary>
+        /// <param name="natUpdaterInfo"></param>
+        /// <returns></returns>
+        public static UpdateHandles UpdateAllGroup(NatUpdaterInfo natUpdaterInfo)
+        {
+            var updateHandles = UpdaterSystem.UpdateAllGroup(natUpdaterInfo);
+            if (updateHandles != null)
+            {
+                UpdaterSystem.UpdateNatManifest(natUpdaterInfo, updateHandles);
+            }
+
+            return updateHandles;
+        }
     }
 }

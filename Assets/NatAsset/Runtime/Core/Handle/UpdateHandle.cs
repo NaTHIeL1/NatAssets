@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
-    internal class UpdateHandle : IHandle
+    public class UpdateHandle : IHandle
     {
         private GroupDownLoadProvider _downLoadProvider;
         private Action<UpdateHandle> OnUpdatedCallback;
@@ -28,6 +28,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal void SetResult(GroupDownLoadProvider groupDownLoadProvider)
         {
+            SetProvider(null);
             _isComplete = true;
             if (groupDownLoadProvider.ProviderResult == ProviderResult.Faild)
             {
@@ -38,7 +39,10 @@ namespace NATFrameWork.NatAsset.Runtime
             {
                 _isSuccess = true;
             }
+            _handleResult = _isSuccess ? HandleResult.Success : HandleResult.Faild;
+            _handleState = HandleState.Finish;
             OnUpdatedCallback?.Invoke(this);
+            AsyncStateCallback?.Invoke();
         }
 
         protected override void OnSetProvider(BaseProvider baseProvider)
@@ -55,6 +59,7 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             _downLoadProvider = null;
             OnUpdatedCallback = null;
+            AsyncStateCallback = null;
             _isComplete = false;
         }
 
