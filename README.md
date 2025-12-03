@@ -1,5 +1,5 @@
 # 介绍
-+ NatAsset是一个unity资源管理框架，目前处于开发状态，框架采用引用计数管理资源卸载，支持同步异步加载资源，仅支持SBP构建，目前build-in模式存在问题后续计划移除build-in模块，该框架为个人学习框架，可作为学习参考。
++ NatAsset是一个unity资源管理框架，目前处于开发状态，框架采用引用计数管理资源卸载，支持同步异步加载资源，仅支持SBP构建，该框架为个人学习框架，可作为学习参考。
 # 注意事项
 + 目前在框架中的资源延迟卸载时间为60s，Bundle延迟卸载时间为60s，每帧任务最大运行数量为50个。目前无法修改。
 + 支持PC（使用streamingAssets目录）、安卓（默认streamingAssets目录）
@@ -229,9 +229,32 @@ public List<string> GenerateExcludeFilName()
     };
 }
 ```
+
+## 更新接口
+设置服务器资源链接
+通过NatAssetMgr.CheckAssetVersion进行版本资源检查
+使用NatAssetMgr.UpdateAllGroup接口启动资源更新流程
+``` c#
+{
+	NatAssetSetting.AssetServerURL = "serverpath";
+	NatUpdaterInfo info = null;
+            NatAssetMgr.CheckAssetVersion(infos =>
+            {
+                info = infos;
+                UnityEngine.Debug.Log("差异资源数"+info.TotalCount);
+                if (info.TotalCount > 0)
+                {
+                    UnityEngine.Debug.Log("开始下载资源");
+                    var updateHandles = NatAssetMgr.UpdateAllGroup(info);
+                    updateHandles.OnLoaded += (handles) =>
+                    {
+                        Debug.Log("下载完毕");
+                    };
+                }
+            });
+}
+```
 # 后续计划
-+ 将一些反射接口进行整合放进ScriptObject中，无需代码继承。
 + 修改SBP打包机制，完全自定义而不采用官方的Build接口。
-+ 移除Build-In打包代码，只维护一套SBP。
 + 完成Handle面板的代码。
-+ 完成资源更新方面的代码。
++ 完成按资源组更新的代码。
