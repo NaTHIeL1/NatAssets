@@ -162,7 +162,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal static void RemoveAssetInfo(AssetInfo assetInfo)
         {
             string guid = TypeStringGUIDPool.GetTargetGUID(assetInfo);
-            if (!_assetDic.ContainsKey(guid))
+            if (_assetDic.ContainsKey(guid))
             {
                 _assetDic.Remove(guid);
             }
