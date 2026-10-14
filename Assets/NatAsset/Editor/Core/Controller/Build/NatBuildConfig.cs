@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using NATFrameWork.NatAsset.Runtime;
 using UnityEditor;
@@ -20,52 +21,48 @@ namespace NATFrameWork.NatAsset.Editor
         private static AssetBundleManifest Mainfest = null;
 #endif
 
-        internal static void INTERFACE_Build(ValidBuildTarget validBuildTarget, VersionData buildVersion)
-        {
-            NatBuildParamters natBuildParamters =
-                new NatBuildParamters(validBuildTarget, NatAssetBuildUtil.CollectBundles());
-            natBuildParamters.BuildTarget = validBuildTarget;
-            natBuildParamters.VersionData = buildVersion;
-            Build(natBuildParamters);
-        }
-
         internal static void Build(NatBuildParamters natBuildParamters)
         {
 #if !NATASSET_SBP_SUPPORT
-            UnityEngine.Debug.LogException(new Exception("请导入Scriptable Build Pipeline包再打包资源"));
-            return;
+            throw new InvalidOperationException("请导入Scriptable Build Pipeline包再打包资源");
 #endif
+            if (natBuildParamters == null)
+                throw new ArgumentNullException(nameof(natBuildParamters));
+            if (natBuildParamters.BundleBuildInfos == null || natBuildParamters.BundleBuildInfos.Count == 0)
+                throw new InvalidOperationException("未收集到可构建的资源，请检查 NatAsset 资源收集配置。");
+            Mainfest = null;
             Stopwatch stopwatch = Stopwatch.StartNew();
             if (natBuildParamters.VersionData == default)
                 natBuildParamters.VersionData = VersionData.NowVersion();
-            string outPut = Path.Combine(natBuildParamters.OutPutPath, natBuildParamters.BuildTarget.ToString(),
-                natBuildParamters.VersionData.ToString()).Replace("\\", "/");
-            if (!Directory.Exists(outPut))
-            {
-                Directory.CreateDirectory(outPut);
-            }
-            if (!ReflectBuild.BeforeBuildExtension())
-                return;
-            Dictionary<string, BundleBuildInfo> bundleBuildInfos = GetBundleInsBuildDic(natBuildParamters);
-            AssetBundleBuild[] assetBundleBuilds =
-                NatAssetBuildUtil.SwitchBBIsToABBs(natBuildParamters.BundleBuildInfos);
-            BuildTarget buildTarget = (BuildTarget) (int) natBuildParamters.BuildTarget;
-            BuildAssetBundleOptions bundleOptions;
-            switch (natBuildParamters.CompressOptions)
-            {
-                case CompressOptions.Uncompressed:
-                    bundleOptions = BuildAssetBundleOptions.UncompressedAssetBundle;
-                    break;
-                case CompressOptions.ChunkBasedCompression:
-                    bundleOptions = BuildAssetBundleOptions.ChunkBasedCompression;
-                    break;
-                default:
-                    bundleOptions = BuildAssetBundleOptions.None;
-                    break;
-            }
-
+            string platformDirectory = Path.GetFullPath(Path.Combine(natBuildParamters.OutPutPath,
+                natBuildParamters.BuildTarget.ToString()));
+            string outPut = Path.Combine(platformDirectory, natBuildParamters.VersionData.ToString()).Replace("\\", "/");
+            NatAssetEditorFiles.RequireChild(outPut, platformDirectory);
+            if (Directory.Exists(outPut) && Directory.EnumerateFileSystemEntries(outPut).Any())
+                throw new IOException($"资源版本目录已存在且不为空，不能覆盖：{outPut}");
+            // A new or empty reserved directory belongs to this build attempt.
             try
             {
+                Directory.CreateDirectory(outPut);
+                if (!ReflectBuild.BeforeBuildExtension())
+                    throw new InvalidOperationException("NatAsset 构建前扩展执行失败，资源构建已停止。");
+                Dictionary<string, BundleBuildInfo> bundleBuildInfos = GetBundleInsBuildDic(natBuildParamters);
+                AssetBundleBuild[] assetBundleBuilds =
+                    NatAssetBuildUtil.SwitchBBIsToABBs(natBuildParamters.BundleBuildInfos);
+                BuildTarget buildTarget = (BuildTarget) (int) natBuildParamters.BuildTarget;
+                BuildAssetBundleOptions bundleOptions;
+                switch (natBuildParamters.CompressOptions)
+                {
+                    case CompressOptions.Uncompressed:
+                        bundleOptions = BuildAssetBundleOptions.UncompressedAssetBundle;
+                        break;
+                    case CompressOptions.ChunkBasedCompression:
+                        bundleOptions = BuildAssetBundleOptions.ChunkBasedCompression;
+                        break;
+                    default:
+                        bundleOptions = BuildAssetBundleOptions.None;
+                        break;
+                }
 #if NATASSET_SBP_SUPPORT
                 NatBundleBuildConfigParam natBundleBuildConfigParam =
                     new NatBundleBuildConfigParam(bundleBuildInfos, buildTarget, natBuildParamters.VersionData);
@@ -73,29 +70,27 @@ namespace NATFrameWork.NatAsset.Editor
 #else
                 Mainfest = BuildPipeline.BuildAssetBundles(outPut, assetBundleBuilds, bundleOptions, buildTarget);
 #endif
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
-            if (Mainfest == null)
-                return;
+                if (Mainfest == null)
+                    throw new InvalidOperationException("NatAsset 资源构建没有生成有效清单，构建已停止。");
 
-            //生成MD5值
-            BuildBundleDicMD5(outPut, bundleBuildInfos);
-            //生成配置文件
-            NatAssetManifest natAssetManifest = BuildConfigJson(outPut, natBuildParamters.VersionData, natBuildParamters.BuildTarget,
-                bundleBuildInfos);
-            //重命名文件
-            BuildRenameAB(outPut ,natAssetManifest);
+                //生成MD5值
+                BuildBundleDicMD5(outPut, bundleBuildInfos);
+                //生成配置文件
+                NatAssetManifest natAssetManifest = BuildConfigJson(outPut, natBuildParamters.VersionData, natBuildParamters.BuildTarget,
+                    bundleBuildInfos);
+                //重命名文件
+                BuildRenameAB(outPut ,natAssetManifest);
+            }
+            catch
+            {
+                NatAssetEditorFiles.TryDeleteFailedBuild(outPut, platformDirectory);
+                throw;
+            }
             stopwatch.Stop();
             UnityEngine.Debug.LogFormat("NatAsset-{0}资源打包成功，耗时：{1}h{2}m{3}s", natBuildParamters.BuildTarget,
                 stopwatch.Elapsed.Hours,
                 stopwatch.Elapsed.Minutes, stopwatch.Elapsed.Seconds);
 
-            //拷贝资源至SpecialEditor目录
-            if (natBuildParamters.UpdateSpecailEdito)
-                NatAssetEditorUtil.CopyAssetToSpecialEditorPath(natBuildParamters.BuildTarget, outPut);
         }
 
         /// <summary>
@@ -134,7 +129,7 @@ namespace NATFrameWork.NatAsset.Editor
                 BundleBuildInfo data = keyValue.Value;
                 if (!tempBundleManifestDic.ContainsKey(data.BundlePath))
                 {
-                    BundleManifest temp = BuildBundleItemNode(data, excludeFilePaths, path);
+                    BundleManifest temp = BuildBundleItemNode(data, excludeFilePaths, path, (BuildTarget)validBuildTarget);
                     tempBundleManifestDic.Add(data.BundlePath, temp);
                 }
                 string[] dependBundles = Mainfest.GetAllDependencies(data.BundlePath);
@@ -148,7 +143,7 @@ namespace NATFrameWork.NatAsset.Editor
                             continue;
                         }    
                         BundleBuildInfo dependOutput = bundleInventoryBuilds[dependBundles[i]];
-                        BundleManifest dependData = BuildBundleItemNode(dependOutput, excludeFilePaths, path);
+                        BundleManifest dependData = BuildBundleItemNode(dependOutput, excludeFilePaths, path, (BuildTarget)validBuildTarget);
                         tempBundleManifestDic.Add(dependOutput.BundlePath, dependData);
                     }
                 }
@@ -195,6 +190,7 @@ namespace NATFrameWork.NatAsset.Editor
 
             #region 数据写入磁盘
 
+            NatAssetEditorUtil.PopulateAssetMetadata(natAssetMainfest);
             string jsonConfig = JsonUtility.ToJson(natAssetMainfest);
             string filePath = Path.Combine(path, NatAssetEditorUtil.ConfigName);
             byte[] dataArray = natAssetMainfest.SerializeToBinary();
@@ -246,7 +242,8 @@ namespace NATFrameWork.NatAsset.Editor
         /// <param name="excludeList"></param>
         /// <returns></returns>
         //构建BundleNode中的子节点
-        private static BundleManifest BuildBundleItemNode(BundleBuildInfo data, List<string> excludeList, string outPutPath)
+        private static BundleManifest BuildBundleItemNode(BundleBuildInfo data, List<string> excludeList, string outPutPath,
+            BuildTarget target)
         {
             BundleManifest temp = new BundleManifest();
             temp.MD5 = data.MD5;
@@ -267,7 +264,7 @@ namespace NATFrameWork.NatAsset.Editor
             Array.Sort(dependence);
             temp.Dependencies = dependence;
             temp.IsAppendHash = NatAssetEditorUtil.AppendHash;
-            temp.BundleEncrypt = NatAssetEditorUtil.SwitchBundleEncrypt(data.BundleEncrypt);
+            temp.BundleEncrypt = NatAssetEditorUtil.SwitchBundleEncrypt(data.BundleEncrypt, target);
             temp.Length = (ulong)new FileInfo(Path.Combine(outPutPath, data.BundlePath)).Length;
             List<AssetManifest> assets = new List<AssetManifest>();
             BuildAssetMainfest(data, assets, excludeList);

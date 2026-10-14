@@ -17,17 +17,16 @@ namespace NATFrameWork.NatAsset.Editor
 
         public ReturnCode Run()
         {
-            BundleBuildParameters bundleParams = (BundleBuildParameters) buildParam;
-            if (bundleParams.Target == BuildTarget.WebGL)
+            // WebGL always emits plain bundles, regardless of global or per-bundle settings.
+            if (buildParam.Target == BuildTarget.WebGL)
                 return ReturnCode.SuccessNotRun;
-
             Dictionary<string, BundleBuildInfo> bundleInventoryBuilds = configParam.NatBundleInventoryBuilds;
             try
             {
                 foreach (KeyValuePair<string,BundleBuildInfo> inventoryBuild in bundleInventoryBuilds)
                 {
                     BundleBuildInfo build = inventoryBuild.Value;
-                    switch (NatAssetEditorUtil.SwitchBundleEncrypt(build.BundleEncrypt))
+                    switch (NatAssetEditorUtil.SwitchBundleEncrypt(build.BundleEncrypt, buildParam.Target))
                     {
                         case BundleEncrypt.Nono: break;
                         case BundleEncrypt.Offset:

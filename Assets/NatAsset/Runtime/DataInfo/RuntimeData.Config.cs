@@ -263,7 +263,7 @@ namespace NATFrameWork.NatAsset.Runtime
             if (_manifestLoader != null)
                 manifest = _manifestLoader.GetBundleManifest(bundlePath);
             if (manifest != null)
-                Hash128.Parse(manifest.Hash);
+                return Hash128.Parse(manifest.Hash);
             return default(Hash128);
         }
 

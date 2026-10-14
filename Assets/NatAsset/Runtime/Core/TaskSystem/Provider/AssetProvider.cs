@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,11 +12,15 @@ namespace NATFrameWork.NatAsset.Runtime
         private TaskRunner _localLoadRunner;
         private Type _assetType;
         private AssetProviderParam _assetProviderParam;
+        private AssetLifetimeInfo _loadingLifetime;
+        private string _loadError;
 
         protected override void OnCreate()
         {
             _assetProviderParam = (AssetProviderParam)_providerParam;
             _assetType = _assetProviderParam.AssetType;
+            try { _loadingLifetime = RuntimeData.AcquireAssetLoad(AssetPath, false); }
+            catch (Exception error) { _loadError = error.Message; return; }
             _localLoadRunner = TaskSystem.LoadTaskRunner;
             RuntimeData.GetBundlePath(AssetPath, out _bundleName, out _assetName);
             //todo:后续改为通过资源名获取资源依赖的bundle
@@ -25,6 +29,13 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal override void OnUpdate()
         {
+            if (_loadError != null)
+            {
+                SetProviderState(ProviderState.Finish);
+                SetProviderResult(ProviderResult.Faild);
+                CompleteAssetHandles(null, _loadError, null);
+                return;
+            }
             //Provider未启动
             if (ProviderState == ProviderState.Waiting)
             {
@@ -41,8 +52,8 @@ namespace NATFrameWork.NatAsset.Runtime
                 //依赖任务全部成功
                 if (!IsSuccessOwnerAndDepend())
                 {
-                    SetAssetSetting(null);
                     SetProviderState(ProviderState.Finish);
+                    SetAssetSetting(null);
                 }
                 else
                 {
@@ -58,10 +69,10 @@ namespace NATFrameWork.NatAsset.Runtime
                     //判断资源加载进度
                     if (_assetTask.IsDone)
                     {
+                        SetProviderState(ProviderState.Finish);
                         if (_assetTask.IsSuccess)
                         {
                             //增加引用计数
-                            AddBundlesRefCount();
                             SetAssetSetting(_assetTask.Result);
                         }
                         else
@@ -82,6 +93,9 @@ namespace NATFrameWork.NatAsset.Runtime
 
         protected override void OnClear()
         {
+            RuntimeData.ReleaseAssetLoad(_loadingLifetime);
+            _loadingLifetime = null;
+            _loadError = null;
             //解除任务锁定
             SetOwnerAndDependRelease();
             if (_assetTask != null)
@@ -95,6 +109,7 @@ namespace NATFrameWork.NatAsset.Runtime
             _localLoadRunner = null;
             _assetType = null;
             _assetProviderParam = default;
+            _dependenceBundles = null;
         }
 
         protected override void OnChangeLoadType(RunModel runModel)
@@ -155,8 +170,8 @@ namespace NATFrameWork.NatAsset.Runtime
             if (asset == null)
             {
                 error = $"资源路径:{AssetPath},加载资源资源名:{_assetName}时出错，检查是否资源名错误";
-                SetAssetHandle(asset, error, null);
                 SetProviderResult(ProviderResult.Faild);
+                SetAssetHandle(asset, error, null);
                 return;
             }
 
@@ -169,50 +184,13 @@ namespace NATFrameWork.NatAsset.Runtime
 
             AssetInfo assetInfo = AssetInfo.CreateAssetInfo(AssetPath, _assetType, asset, bundles);
             RuntimeData.AddAssetInfo(assetInfo);
-            SetAssetHandle(asset, error, assetInfo);
             SetProviderResult(ProviderResult.Success);
+            SetAssetHandle(asset, error, assetInfo);
         }
 
-        private void SetAssetHandle(object asset, string error, AssetInfo assetInfo)
+        private void SetAssetHandle(object asset, string error, AssetInfo info)
         {
-            if (error != String.Empty)
-                Debug.LogErrorFormat(error);
-
-            //当走完资源加载逻辑，但相应的发起句柄已全部卸载则立即启用资源卸载逻辑
-            if (Handles == null || Handles.Count == 0)
-            {
-                assetInfo?.AddRefCount();
-                assetInfo?.RedRefCount();
-                return;
-            }
-
-            //正常情况下填充句柄
-            for (int i = 0; i < Handles.Count; i++)
-            {
-                assetInfo?.AddRefCount();
-                AssetHandle assetHandle = Handles[i] as AssetHandle;
-                assetHandle.SetAsset(asset);
-            }
-        }
-
-        private void AddBundlesRefCount()
-        {
-            if (_OwnerMainTask != null)
-            {
-                BundleInfo bundleInfo = RuntimeData.GetBundle(_bundleName);
-                if (!ContainHasAddInfo(bundleInfo))
-                    bundleInfo.AddRefCount();
-            }
-
-            foreach (string bundleStr in _dependenceBundles)
-            {
-                if (_DependenceTask.ContainsKey(bundleStr))
-                {
-                    BundleInfo tempBundle = RuntimeData.GetBundle(bundleStr);
-                    if (!ContainHasAddInfo(tempBundle))
-                        tempBundle.AddRefCount();
-                }
-            }
+            CompleteAssetHandles(asset, error, info);
         }
     }
 }

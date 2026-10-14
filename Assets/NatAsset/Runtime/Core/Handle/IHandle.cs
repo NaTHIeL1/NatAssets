@@ -49,6 +49,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal void CreateHandle(string name)
         {
             this.Name = name;
+            _handleResult = HandleResult.Nono;
             _isCancel = false;
             _isValid = true;
             _handleState = HandleState.Loading;
@@ -70,7 +71,9 @@ namespace NATFrameWork.NatAsset.Runtime
             if (_isCancel)
             {
                 Debug.LogWarningFormat("Handle:{0}:被取消", Name);
-                CancelStateCallback?.Invoke();
+                var callbacks = CancelStateCallback;
+                CancelStateCallback = null;
+                CompletionCallbacks.Invoke(callbacks, Name);
                 return true;
             }
 

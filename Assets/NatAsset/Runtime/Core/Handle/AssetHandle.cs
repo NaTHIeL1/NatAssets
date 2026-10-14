@@ -10,6 +10,8 @@ namespace NATFrameWork.NatAsset.Runtime
         public Type TargetType { get; protected set; }
 
         private Action<AssetHandle> OnLoadedCallback;
+        private AssetInfo _ownedAsset;
+        private long _ownedGeneration;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static AssetHandle Create(string name, Type type)
@@ -22,8 +24,11 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal void SetAsset(object obj)
         {
+            if (!IsValid || IsDone) return;
             SetProvider(null);
             Asset = obj;
+            _ownedAsset = obj == null ? null : RuntimeData.GetAsset(Name, TargetType);
+            _ownedGeneration = _ownedAsset?.Generation ?? 0;
             _handleResult = Asset != null ? HandleResult.Success : HandleResult.Faild;
             _handleState = HandleState.Finish;
             if (CheckTokenCancel())
@@ -32,8 +37,13 @@ namespace NATFrameWork.NatAsset.Runtime
             }
 
             CheckError();
-            OnLoadedCallback?.Invoke(this);
-            AsyncStateCallback?.Invoke();
+            var callbacks = OnLoadedCallback;
+            var continuations = AsyncStateCallback;
+            string context = Name;
+            OnLoadedCallback = null;
+            AsyncStateCallback = null;
+            CompletionCallbacks.Invoke(callbacks, this, context);
+            CompletionCallbacks.Invoke(continuations, context);
         }
 
         public event Action<AssetHandle> OnLoaded
@@ -47,7 +57,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 }
                 else if (IsDone)
                 {
-                    value?.Invoke(this);
+                    CompletionCallbacks.Invoke(value, this, Name);
                     return;
                 }
 
@@ -97,8 +107,9 @@ namespace NATFrameWork.NatAsset.Runtime
         private void InternalUnLoad()
         {
             //已经加载完毕的走计数卸载流程
-            AssetInfo assetInfo = RuntimeData.GetAsset(Name, TargetType);
-            if (assetInfo != null)
+            AssetInfo assetInfo = _ownedAsset;
+            _ownedAsset = null;
+            if (assetInfo != null && assetInfo.Generation == _ownedGeneration && !RuntimeData.IsReleasing)
             {
                 assetInfo.RedRefCount();
             }
@@ -109,6 +120,8 @@ namespace NATFrameWork.NatAsset.Runtime
             Asset = null;
             TargetType = null;
             OnLoadedCallback = null;
+            _ownedAsset = null;
+            _ownedGeneration = 0;
         }
 
         public HandleAwait<AssetHandle> GetAwaiter()

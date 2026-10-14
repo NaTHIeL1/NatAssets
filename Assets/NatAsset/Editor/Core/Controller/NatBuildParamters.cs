@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using NATFrameWork.NatAsset.Runtime;
 using UnityEditor;
 
@@ -39,11 +39,6 @@ namespace NATFrameWork.NatAsset.Editor
         /// 资源构建日期
         /// </summary>
         public VersionData VersionData = default;
-
-        /// <summary>
-        /// 更新编辑器下本地bundle
-        /// </summary>
-        public bool UpdateSpecailEdito = true;
 
         /// <summary>
         /// AssetBundle

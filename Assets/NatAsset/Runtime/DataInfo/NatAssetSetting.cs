@@ -1,4 +1,4 @@
-﻿namespace NATFrameWork.NatAsset.Runtime
+namespace NATFrameWork.NatAsset.Runtime
 {
     public static class NatAssetSetting
     {
@@ -9,7 +9,9 @@
         public static int TaskFrameLimitUnLoad { get; set; } = 50;
         public static int TaskFrameLimitNetLoad { get; set; } = 50;
 
+        /// <summary>兼容旧调用；WebGL 始终按清单 Hash 请求，此开关不再影响 WebGL 加载。</summary>
         public static bool WebGLIsUseCache { get; set; } = true;
+        /// <summary>原生平台的 Bundle CRC 校验开关；WebGL 不使用 CRC 校验。</summary>
         public static bool UseCRC { get; set; } = true;
         
         internal static RunWay TRunWay;
@@ -22,7 +24,7 @@
         /// <summary>
         /// NatAsset版本
         /// </summary>
-        public static readonly int NatAssetVersion = 1;
+        public static readonly int NatAssetVersion = 2;
 
         /// <summary>
         /// 资源服务器地址
@@ -54,9 +56,29 @@
             }
         }
 
+        internal static string ExpectedBundlePlatform
+        {
+            get
+            {
+#if UNITY_EDITOR
+                return UnityEditor.EditorUserBuildSettings.activeBuildTarget.ToString();
+#else
+                switch (UnityEngine.Application.platform)
+                {
+                    case UnityEngine.RuntimePlatform.WindowsPlayer: return "StandaloneWindows64";
+                    case UnityEngine.RuntimePlatform.Android: return "Android";
+                    case UnityEngine.RuntimePlatform.IPhonePlayer: return "iOS";
+                    case UnityEngine.RuntimePlatform.WebGLPlayer: return "WebGL";
+                    default: return UnityEngine.Application.platform.ToString();
+                }
+#endif
+            }
+        }
+
         internal static void InitData()
         {
 #if UNITY_EDITOR
+            NatAssetPathTool.ResetEditorPaths();
             TRunWay = NatAssetSObj.Instance.RunWay;
             return;
 #endif

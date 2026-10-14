@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -21,6 +21,8 @@ namespace NATFrameWork.NatAsset.Runtime
         private SceneProviderState _sceneProviderState = SceneProviderState.Nono;
 
         private SceneProviderParam _sceneProviderParam;
+        private AssetLifetimeInfo _loadingLifetime;
+        private string _loadError;
 
         protected override void OnCreate()
         {
@@ -29,12 +31,23 @@ namespace NATFrameWork.NatAsset.Runtime
             _isSceneProvider = true;
             _loadTaskRunner = TaskSystem.LoadTaskRunner;
 
-            RuntimeData.GetBundleScenePath(AssetPath, out _bundleName, out _sceneName);
-            _depBundles = RuntimeData.GetAllDependencies(_bundleName);
+            try
+            {
+                _loadingLifetime = RuntimeData.AcquireAssetLoad(AssetPath, false);
+                RuntimeData.GetBundleScenePath(AssetPath, out _bundleName, out _sceneName);
+                _depBundles = RuntimeData.GetAllDependencies(_bundleName);
+            }
+            catch (System.Exception error) { _loadError = error.Message; }
         }
 
         internal override void OnUpdate()
         {
+            if (_loadError != null)
+            {
+                SetProviderState(ProviderState.Finish);
+                SetSceneSetting(default, false);
+                return;
+            }
             //未执行
             if (ProviderState == ProviderState.Waiting)
             {
@@ -60,8 +73,8 @@ namespace NATFrameWork.NatAsset.Runtime
                     return;
                 if (!IsSuccessOwnerAndDepend())
                 {
-                    SetSceneSetting(default, false);
                     SetProviderState(ProviderState.Finish);
+                    SetSceneSetting(default, false);
                 }
                 else
                 {
@@ -79,19 +92,16 @@ namespace NATFrameWork.NatAsset.Runtime
                         //异步句柄为空代表可能加载失败或者同步加载，只需当做加载完成即可
                         if (_operation == null)
                         {
-                            SetSceneSetting(_scene, false);
                             SetProviderState(ProviderState.Finish);
+                            SetSceneSetting(_scene, false);
                         }
 
                         if (_operation != null && _operation.isDone)
                         {
-                            if (_scene.IsValid() && _scene.isLoaded)
-                            {
-                                AddBundlesRefCount();
-                            }
+
+                            SetProviderState(ProviderState.Finish);
 
                             SetSceneSetting(_scene, false);
-                            SetProviderState(ProviderState.Finish);
                         }
                     }
                     //处于取消任务的状态
@@ -105,13 +115,10 @@ namespace NATFrameWork.NatAsset.Runtime
                         {
                             if (_operation.isDone)
                             {
-                                if (_scene.IsValid() && _scene.isLoaded)
-                                {
-                                    AddBundlesRefCount();
-                                }
+
+                                SetProviderState(ProviderState.Finish);
 
                                 SetSceneSetting(_scene, true);
-                                SetProviderState(ProviderState.Finish);
                             }
                         }
                     }
@@ -126,6 +133,9 @@ namespace NATFrameWork.NatAsset.Runtime
 
         protected override void OnClear()
         {
+            RuntimeData.ReleaseAssetLoad(_loadingLifetime);
+            _loadingLifetime = null;
+            _loadError = null;
             //解除任务锁定
             SetOwnerAndDependRelease();
             _sceneProviderState = SceneProviderState.Nono;
@@ -175,11 +185,11 @@ namespace NATFrameWork.NatAsset.Runtime
         private void SetSceneSetting(Scene scene, bool isRelease)
         {
             string error = string.Empty;
-            if (scene == default)
+            if (!scene.IsValid() || !scene.isLoaded)
             {
-                error = $"场景路径:{AssetPath},加载场景:{_sceneName}时出错，检查场景路径是否正确";
-                SetSceneHandle(scene, error, null);
+                error = _loadError ?? $"场景路径:{AssetPath},加载场景:{_sceneName}时出错，检查场景路径是否正确";
                 SetProviderResult(ProviderResult.Faild);
+                SetSceneHandle(scene, error, null);
                 return;
             }
 
@@ -191,9 +201,10 @@ namespace NATFrameWork.NatAsset.Runtime
             }
 
             SceneInfo sceneInfo = SceneInfo.CreateSceneInfo(_providerGUID, scene, bundles);
+            sceneInfo.Lifetime = RuntimeData.RegisterSceneLifetime(AssetPath);
             RuntimeData.AddSceneInfo(sceneInfo);
-            SetSceneHandle(scene, error, sceneInfo);
             SetProviderResult(ProviderResult.Success);
+            SetSceneHandle(scene, error, sceneInfo);
         }
 
         private void SetSceneHandle(Scene scene, string error, SceneInfo sceneInfo)
@@ -211,11 +222,12 @@ namespace NATFrameWork.NatAsset.Runtime
             }
             else
             {
-                for (int i = 0; i < Handles.Count; i++)
+                foreach (var handle in Handles.ToArray())
                 {
-                    if (sceneInfo != null)
-                        sceneInfo.AddRefCount();
-                    SceneHandle sceneHandle = Handles[i] as SceneHandle;
+                    SceneHandle sceneHandle = handle as SceneHandle;
+                    if (sceneHandle == null || !sceneHandle.IsValid || sceneHandle.IsDone) continue;
+                    sceneInfo?.AddRefCount();
+                    sceneHandle.Error = error;
                     sceneHandle.SetScene(scene);
                 }
             }
@@ -232,25 +244,5 @@ namespace NATFrameWork.NatAsset.Runtime
             }
         }
 
-        private void AddBundlesRefCount()
-        {
-            if (_OwnerMainTask != null)
-            {
-                BundleInfo bundleInfo = RuntimeData.GetBundle(_bundleName);
-                if (!ContainHasAddInfo(bundleInfo))
-                    bundleInfo.AddRefCount();
-            }
-
-            if (_depBundles == null) return;
-            foreach (string bundleStr in _depBundles)
-            {
-                if (_DependenceTask.ContainsKey(bundleStr))
-                {
-                    BundleInfo tempBundle = RuntimeData.GetBundle(bundleStr);
-                    if (!ContainHasAddInfo(tempBundle))
-                        tempBundle.AddRefCount();
-                }
-            }
-        }
     }
 }

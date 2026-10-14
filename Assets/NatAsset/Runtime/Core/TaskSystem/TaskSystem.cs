@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
@@ -22,6 +22,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal static void Update()
         {
             UpdateProvider();
+            RuntimeData.ScheduleUnusedLifetimes();
             UpdateTaskRunner();
         }
 
@@ -29,7 +30,36 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             ReleaseProvider();
             ReleaseTaskRunner();
-            Resources.UnloadUnusedAssets();
+        }
+
+        internal static async System.Threading.Tasks.Task DrainProvidersAsync()
+        {
+            CancelProviderHandles(_providerList);
+            CancelProviderHandles(_netProviderList);
+            while (_providerList.Count != 0 || _netProviderList.Count != 0)
+            {
+                UpdateProvider();
+                _loadTaskRunner.Update();
+                _netLoadTaskRunner.Update();
+                SceneSystem.Update();
+                if (_providerList.Count != 0 || _netProviderList.Count != 0)
+                    await System.Threading.Tasks.Task.Yield();
+            }
+        }
+
+        private static void CancelProviderHandles(ListDic<string, BaseProvider> providers)
+        {
+            for (int i = 0; i < providers.Count; i++)
+            {
+                var handles = providers.GetElementByIndex(i).Handles;
+                if (handles == null) continue;
+                foreach (IHandle handle in handles.ToArray())
+                {
+                    if (!handle.IsValid) continue;
+                    if (handle is SceneHandle scene) scene.ReleaseLogic();
+                    else handle.Dispose();
+                }
+            }
         }
 
         //轮询Provider
@@ -68,6 +98,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 BaseProvider baseProvider = providerList.GetElementByIndex(i);
                 BaseProvider.Release(baseProvider);
             }
+            providerList.Clear();
         }
 
         private static void InitTaskRunner()
@@ -131,8 +162,11 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal static void FreeUnUseAsset()
         {
-            //立即切换至同步卸载
-            _unLoadTaskRunner.SwitchRunModel(RunModel.Sync);
+            do
+            {
+                RuntimeData.ScheduleUnusedLifetimes();
+                _unLoadTaskRunner.SwitchRunModel(RunModel.Sync);
+            } while (RuntimeData.HasLifetimeChanges && !RuntimeData.IsReleasing);
         }
     }
 }

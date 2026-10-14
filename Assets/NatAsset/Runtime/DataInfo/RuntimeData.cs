@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
@@ -20,6 +20,7 @@ namespace NATFrameWork.NatAsset.Runtime
         private static Dictionary<int, SceneInfo> _sceneDic = new Dictionary<int, SceneInfo>(5);
 
         internal static event Action CompleteCallBack;
+        internal static event Action<string> FailureCallBack;
 
         private static NatAssetState _natAssetState = NatAssetState.Waiting;
 
@@ -37,6 +38,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal static void Init(BaseManifestModeLoader modelLoader)
         {
+            IsReleasing = false;
             _manifestLoader = modelLoader;
             SetNatAssetState(NatAssetState.Waiting);
 #if UNITY_EDITOR
@@ -67,6 +69,16 @@ namespace NATFrameWork.NatAsset.Runtime
                 {
                     ExeCompleteCallbak();
                 }
+                else if (manifestModeState == ManifestModeState.Error)
+                {
+                    SetNatAssetState(NatAssetState.Failed);
+                    var failure = FailureCallBack;
+                    CompleteCallBack = null;
+                    FailureCallBack = null;
+                    string error = _manifestLoader.LastError ?? "NatAsset 清单初始化失败。";
+                    UnityEngine.Debug.LogError(error);
+                    CompletionCallbacks.Invoke(failure, error, "初始化失败");
+                }
             }
             _manifestLoader.LoadCallBack = Callback;
             _manifestLoader.StartLoader();
@@ -82,36 +94,26 @@ namespace NATFrameWork.NatAsset.Runtime
             }
 
             SetNatAssetState(NatAssetState.Inited);
-            CompleteCallBack?.Invoke();
+            var callback = CompleteCallBack;
             CompleteCallBack = null;
+            FailureCallBack = null;
+            CompletionCallbacks.Invoke(callback, "初始化完成");
         }
 
         internal static void Release()
         {
-            _manifestLoader.StopLoader();
+            CompleteCallBack = null;
+            FailureCallBack = null;
+            _manifestLoader?.StopLoader();
             SetNatAssetState(NatAssetState.Release);
+            foreach (SceneInfo scene in _sceneDic.Values) BaseInfo.Release(scene);
+            _sceneDic.Clear();
+            ClearLifetimes();
+            ReleaseOwnedBundles();
             _assetDic.Clear();
             //_assetGroupDic.Clear();
-            _sceneDic.Clear();
             _bundleDic.Clear();
             //UnLoadMainfest();
-        }
-
-        //对回收的资源进行标记
-        internal static void MarkAndLaunchUnLoad()
-        {
-            foreach (KeyValuePair<string, AssetInfo> keyValuePair in _assetDic)
-                keyValuePair.Value.CollectionMark();
-
-            //foreach(KeyValuePair<Type,AssetTypeGroup> keyValuePair in _assetGroupDic)
-            //    keyValuePair.Value.CollectionMark();
-            foreach (KeyValuePair<int, SceneInfo> keyValuePair in _sceneDic)
-                keyValuePair.Value.CollectionMark();
-
-            foreach (KeyValuePair<string, AssetInfo> keyValuePair in _assetDic)
-                keyValuePair.Value.RedRefCount();
-            foreach (KeyValuePair<int, SceneInfo> keyValuePair in _sceneDic)
-                keyValuePair.Value.RedRefCount();
         }
 
         /// <summary>
@@ -122,7 +124,7 @@ namespace NATFrameWork.NatAsset.Runtime
         /// <returns></returns>
         internal static AssetInfo GetAsset(string path, Type type)
         {
-            string guid = TypeStringGUIDPool.GetTargetGUID(type, path);
+            string guid = TypeStringGUIDPool.GetTargetGUID(type, NormalizeAssetPath(path));
             if (_assetDic.TryGetValue(guid, out AssetInfo assetInfo))
             {
                 return assetInfo;
@@ -156,6 +158,7 @@ namespace NATFrameWork.NatAsset.Runtime
             if (!_assetDic.ContainsKey(guid))
             {
                 _assetDic.Add(guid, assetInfo);
+                RegisterAssetLifetime(assetInfo);
             }
         }
 
@@ -174,6 +177,7 @@ namespace NATFrameWork.NatAsset.Runtime
             if (!_bundleDic.ContainsKey(path))
             {
                 _bundleDic.Add(path, bundleInfo);
+                MarkLifetimeDirty();
             }
         }
 
@@ -207,6 +211,7 @@ namespace NATFrameWork.NatAsset.Runtime
     {
         Waiting,  //未启动状态
         Inited,   //已处于实例化状态
+        Failed,   //初始化失败，禁止继续加载
         Release,  //处于释放状态
     }
 }

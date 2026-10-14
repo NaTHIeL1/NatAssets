@@ -1,5 +1,5 @@
 # 介绍
-+ NatAsset是一个unity资源管理框架，目前处于开发状态，框架采用引用计数管理资源卸载，支持同步异步加载资源，支持build-in或SBP构建，目前build-in模式存在问题后续计划移除build-in模块，该框架为个人学习框架，可作为学习参考。
++ NatAsset是一个unity资源管理框架，目前处于开发状态，框架采用引用计数管理资源卸载，NatAssetMgr 对业务仅提供异步加载入口，内部 Loader 的同步能力保留，支持build-in或SBP构建，目前build-in模式存在问题后续计划移除build-in模块，该框架为个人学习框架，可作为学习参考。
 # 注意事项
 + 在该框架中使用了UniTask库，想要运行该框架需再下载一个UniTask库。
 + 目前在框架中的资源延迟卸载时间为60s，Bundle延迟卸载时间为60s，每帧任务最大运行数量为50个。目前无法修改。
@@ -89,19 +89,26 @@ NatAssetUtil.GetBundleMD5(bundleName)
 >资源加载采用句柄机制，异步句柄可使用异步await等待
 
 #### 加载
-+ 同步加载资源
++ 异步加载资源（在 async 方法中调用，使用期间持有句柄）
 ``` c#
 {
-	AssetHandle assetHandle = 
-		NatAssetMgr.LoadAsset("Assets/Res/Shader/ShaderVariantsCollection.shadervariants", 
-		typeof(ShaderVariantCollection));
-    ShaderVariantCollection shaderVariantCollection = 
-	    (ShaderVariantCollection)assetHandle.Asset;
+    using (AssetHandle handle = await NatAssetMgr.LoadAssetAsync(
+        "Assets/Res/Shader/ShaderVariantsCollection.shadervariants", typeof(ShaderVariantCollection)))
+    {
+        if (!handle.IsSuccess) throw new System.InvalidOperationException(handle.Error);
+        ((ShaderVariantCollection)handle.Asset).WarmUp();
+    }
 }
 
 {
-	AssetHandle textureHandle = NatAssetMgr.LoadAsset<Texture>("Assets/Res/Texture/texture.jpg");
-	rawImage.texture = (assetHandle.Asset as Texture);
+    AssetHandle handle = await NatAssetMgr.LoadAssetAsync<Texture>("Assets/Res/Texture/texture.jpg");
+    if (!handle.IsSuccess || rawImage == null)
+    {
+        handle.Dispose();
+        return;
+    }
+    handle.OnBind(rawImage.gameObject);
+    rawImage.texture = handle.Asset as Texture;
 }
 ```
 + 异步加载资源
@@ -112,7 +119,7 @@ public void LoadSpriteAsync(string path)
     assetHandle.OnLoaded += BindSprite;
 }
 
-public async void LoadSpriteAsyncAw(string path)
+public async System.Threading.Tasks.Task LoadSpriteAsyncAw(string path)
 {
 	AssetHandle assetHandle = await NatAssetMgr.LoadAssetAsync<Sprite>(path);
     BindSprite(assetHandle);
@@ -120,15 +127,23 @@ public async void LoadSpriteAsyncAw(string path)
 
 public void BindSprite(AssetHandle assetHandle)
 {
+	if (!assetHandle.IsSuccess || gameObject == null)
+	{
+		assetHandle.Dispose();
+		return;
+	}
 	assetHandle.OnBind(gameObject);
     image.sprite = assetHandle.Asset as Sprite;
 }
 ```
-+ 异步以及同步实例化资源接口(GameObject)，该接口会自定绑定物体的生命周期，当物体销毁时自行进行句柄卸载
++ 异步实例化资源接口(GameObject)，成功后自动绑定物体生命周期，销毁时释放句柄。传入 Priority 可明确选择 Task 重载，避免与可选回调重载混淆。失败返回 null；调用方退出后收到的对象应销毁，不再加入旧界面。
 ``` c#
-NatAssetMgr.InstanceObj(string targetPath)
-NatAssetMgr.InstanceObjAsync(string targetPath)
+GameObject instance = await NatAssetMgr.InstanceObjAsync(targetPath, Priority.Low);
+if (instance == null) return;
+// 使用 instance，结束时 Destroy(instance)。
 ```
+
+`LoadAsset` 与 `InstanceObj` 同步入口已移除，不能以内部 Loader 替代业务入口。缓存命中时异步句柄可能立即完成；等待期间不要释放句柄，释放后句柄无效，不再读取、await 或期待后续回调。句柄内部实现保持不变。
 
 #### 卸载
 + 卸载资源
@@ -163,7 +178,7 @@ NatAssetMgr.InstanceObjAsync(string targetPath)
 #### 资源句柄
 + 异步回调，异步回调有两种形式，一种是使用await，一种是对应句柄调用OnLoaded委托。
 ``` c#
-public void LoadSpriteAsyncAw(string path)
+public async System.Threading.Tasks.Task LoadSpriteAsyncAw(string path)
 {
 	AssetHandle assetHandle = await NatAssetMgr.LoadAssetAsync<Sprite>(path);
     BindSprite(assetHandle);

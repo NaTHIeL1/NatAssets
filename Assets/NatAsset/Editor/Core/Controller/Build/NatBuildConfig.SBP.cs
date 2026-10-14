@@ -37,7 +37,7 @@ namespace NATFrameWork.NatAsset.Editor
                 Debug.LogError("存在未保存设置的资源");
             }
             if (exitCode < ReturnCode.Success)
-                return null;
+                throw new System.InvalidOperationException($"NatAsset Scriptable Build Pipeline 失败：{exitCode}");
 
             var manifest = ScriptableObject.CreateInstance<CompatibilityAssetBundleManifest>();
             manifest.SetResults(results.BundleInfos);

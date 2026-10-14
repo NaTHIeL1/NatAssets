@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -62,6 +62,11 @@ namespace NATFrameWork.NatAsset.Runtime
         internal static void Release()
         {
             _buildInScene.Clear();
+            _sceneHandles.Clear();
+            _waitLoadHandlesQueue.Clear();
+            foreach (var operation in _unLoadSceneOperations) UnLoadSceneOperation.Release(operation);
+            _unLoadSceneOperations.Clear();
+            _mainSceneHandle = null;
         }
 
         internal static void LoadScene(string targetPath, LoadSceneMode loadSceneMode, Priority priority,

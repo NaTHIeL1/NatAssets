@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,6 +9,7 @@ namespace NATFrameWork.NatAsset.Runtime
     {
         public AssetHandle LoadAsset(string targetPath, Type type, Priority priority)
         {
+            targetPath = RuntimeData.NormalizeAssetPath(targetPath);
             AssetHandle handle = AssetHandle.Create(targetPath, type);
             if (targetPath == string.Empty)
             {
@@ -20,7 +21,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 AssetInfo assetInfo = RuntimeData.GetAsset(targetPath, type);
                 if (assetInfo == null)
                 {
-                    if (TaskSystem.TryGetProvider(targetPath, out BaseProvider baseProvider))
+                    if (TaskSystem.TryGetProvider(TypeStringGUIDPool.GetTargetGUID(type, targetPath), out BaseProvider baseProvider))
                     {
                         baseProvider.AddHandle(handle, priority, RunModel.Sync);
                     }
@@ -44,6 +45,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
         public AssetHandle LoadAssetAsync(string targetPath, Type type, Priority priority)
         {
+            targetPath = RuntimeData.NormalizeAssetPath(targetPath);
             AssetHandle handle = AssetHandle.Create(targetPath, type);
             if (targetPath == string.Empty)
             {
@@ -55,7 +57,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 AssetInfo assetInfo = RuntimeData.GetAsset(targetPath, type);
                 if (assetInfo == null)
                 {
-                    if (TaskSystem.TryGetProvider(targetPath, out BaseProvider baseProvider))
+                    if (TaskSystem.TryGetProvider(TypeStringGUIDPool.GetTargetGUID(type, targetPath), out BaseProvider baseProvider))
                     {
                         baseProvider.AddHandle(handle, priority, RunModel.Async);
                     }

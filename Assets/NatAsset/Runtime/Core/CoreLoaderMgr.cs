@@ -8,9 +8,12 @@ namespace NATFrameWork.NatAsset.Runtime
     internal static class CoreLoaderMgr
     {
         private static ILocalLoader _localLoader;
+        private static System.Threading.Tasks.Task _releaseTask;
 
         internal static void Init(BaseManifestModeLoader modelLoader)
         {
+            if (_releaseTask != null && !_releaseTask.IsCompleted)
+                throw new InvalidOperationException("NatAsset 上次退出尚未完成。");
             NatAssetSetting.InitData();
             SetLoader();
             OperationSystem.Init();
@@ -22,26 +25,45 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal static void Update()
         {
+            if (RuntimeData.IsReleasing || RuntimeData.NatAssetState == NatAssetState.Failed) return;
             SceneSystem.Update();
             TaskSystem.Update();
             UpdaterSystem.Update();
             OperationSystem.Update();
         }
 
-        internal static void Release()
+        internal static System.Threading.Tasks.Task Release()
         {
-            UpdaterSystem.Release();
-            SceneSystem.Release();
-            TaskSystem.Release();
-            OperationSystem.Release();
-            RuntimeData.Release();
-            _localLoader = null;
-            NatAssetSetting.ReleaseData();
-            ManifestLoad.Release();
-            TypeStringGUIDPool.Release();
-            ReferencePool.ReleaseAll();
-            GC.Collect();
-            GC.Collect();
+            if (RuntimeData.IsReleasing) return _releaseTask ?? System.Threading.Tasks.Task.CompletedTask;
+            RuntimeData.BeginRelease();
+            _releaseTask = ReleaseAsync();
+            return _releaseTask;
+        }
+
+        private static async System.Threading.Tasks.Task ReleaseAsync()
+        {
+            try
+            {
+                UpdaterSystem.Release();
+                await TaskSystem.DrainProvidersAsync();
+                await RuntimeData.UnloadManagedScenesAsync();
+                SceneSystem.Release();
+                TaskSystem.Release();
+                OperationSystem.Release();
+                RuntimeData.Release();
+                _localLoader = null;
+                NatAssetSetting.ReleaseData();
+                ManifestLoad.Release();
+                TypeStringGUIDPool.Release();
+                ReferencePool.ReleaseAll();
+                var cleanup = UnityEngine.Resources.UnloadUnusedAssets();
+                while (!cleanup.isDone) await System.Threading.Tasks.Task.Yield();
+            }
+            catch (Exception error)
+            {
+                UnityEngine.Debug.LogException(error);
+                throw;
+            }
         }
 
         internal static AssetHandle LoadAsset(string path, Type type, Priority priority)
@@ -111,6 +133,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
         private static bool CheckHasInit()
         {
+            if (RuntimeData.IsReleasing) throw new InvalidOperationException("NatAsset 正在退出，不能加载新资源。");
             if (RuntimeData.NatAssetState == NatAssetState.Inited)
             {
                 return true;

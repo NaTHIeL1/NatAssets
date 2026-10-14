@@ -1,96 +1,37 @@
-﻿using System;
 using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
     public class AssetUnLoadTask : BaseTask
     {
-        private float _executionTime = 0;
-        private Type _assetType;
-        private AssetTaskParam _assetTaskParam;
-
+        private float _elapsed;
+        private AssetLifetimeInfo _target;
+        private long _generation;
         protected override void OnCreate()
         {
-            _executionTime = 0;
-            _assetTaskParam = (AssetTaskParam)_taskParam;
-            _assetType = _assetTaskParam.AssetType;
+            _elapsed = 0;
+            _target = RuntimeData.GetLifetime(TaskName);
+            _generation = _target?.Generation ?? 0;
         }
-
         public override float Progress
         {
-            get
-            {
-                return _executionTime / NatAssetSetting.AssetDelayTime;
-            }
-            protected set => base.Progress = value;
+            get => NatAssetSetting.AssetDelayTime <= 0 ? 1 : Mathf.Clamp01(_elapsed / NatAssetSetting.AssetDelayTime);
+            protected set { }
         }
-
         internal override void TaskUpdate()
         {
-            if (TaskState == TaskState.Waiting)
-                SetTaskState(TaskState.Running);
-
-            if (TaskState == TaskState.Running)
-            {
-                _executionTime += Time.deltaTime;
-                if (_executionTime >= NatAssetSetting.AssetDelayTime)
-                {
-                    UnLoad();
-                    SetTaskState(TaskState.End);
-                }
-            }
-
-            if (TaskState == TaskState.End)
-                return;
+            if (IsDone) return;
+            SetTaskState(TaskState.Running);
+            _elapsed += Time.unscaledDeltaTime;
+            if (_elapsed >= NatAssetSetting.AssetDelayTime) Execute();
         }
-
-        protected override void OnCancelTask()
+        private void Execute()
         {
-            if (TaskState == TaskState.Waiting)
-            {
-                SetTaskState(TaskState.End);
-            }
-
-            if (TaskState == TaskState.Running)
-            {
-                _executionTime = 0;
-                Progress = 0;
-                SetTaskState(TaskState.End);
-            }
-
-            if (TaskState == TaskState.End)
-                return;
+            RuntimeData.TryUnloadAsset(_target, _generation, this);
+            SetTaskState(TaskState.End);
         }
-
-        protected override void OnSwitchToSync()
-        {
-            if (TaskState != TaskState.End)
-            {
-                Progress = 1;
-                UnLoad();
-                SetTaskState(TaskState.End);
-            }
-        }
-
-        protected override void OnClear()
-        {
-            _executionTime = 0;
-            _assetType = null;
-            _assetTaskParam = default;
-        }
-
-        private void UnLoad()
-        {
-            AssetInfo _assetInfo = RuntimeData.GetAsset(TaskName, _assetType);
-            //卸载原生资源
-            if (_assetInfo.Asset is Sprite sprite)
-                Resources.UnloadAsset(sprite.texture);
-            else if (_assetInfo.Asset is Texture2D || _assetInfo.Asset is TextAsset)
-                Resources.UnloadAsset(_assetInfo.Asset as UnityEngine.Object);
-            //原生资源
-            //Debug.Log($"资源{_assetInfo.targetPath}卸载成功");
-            RuntimeData.RemoveAssetInfo(_assetInfo);
-            BundleInfo.Release(_assetInfo);
-        }
+        protected override void OnCancelTask() => SetTaskState(TaskState.End);
+        protected override void OnSwitchToSync() { if (!IsDone) Execute(); }
+        protected override void OnClear() { _target = null; _generation = 0; _elapsed = 0; }
     }
 }

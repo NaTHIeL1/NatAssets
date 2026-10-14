@@ -19,6 +19,12 @@ namespace NATFrameWork.Profiler
             return _handleInfos;
         }
 
+        /// <summary>Managed ownership only; this is not Unity's native object reference count.</summary>
+        public static List<string> GetAssetLifetimeDiagnostics()
+        {
+            return RuntimeData.GetLifetimeDiagnostics();
+        }
+
         internal static void AddHandleInfo(IHandle handle)
         {
             HandleInfo handleInfo = new HandleInfo();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -46,14 +46,29 @@ namespace NATFrameWork.NatAsset.Runtime
 
                     foreach (var type in typeSearchs)
                     {
-                        IEditorReflect editorReflect = (IEditorReflect)Activator.CreateInstance(type);
-                        _editorSimulationPath = Path.Combine(Directory.GetCurrentDirectory(), editorReflect.GetOutPutPathByRuntime);
+                        object instance = typeof(ScriptableObject).IsAssignableFrom(type)
+                            ? ScriptableObject.CreateInstance(type) : Activator.CreateInstance(type);
+                        try
+                        {
+                            _editorSimulationPath = Path.Combine(Directory.GetCurrentDirectory(), ((IEditorReflect)instance).GetOutPutPathByRuntime);
+                        }
+                        finally
+                        {
+                            if (instance is ScriptableObject temporary) UnityEngine.Object.DestroyImmediate(temporary);
+                        }
                     }
                 }
                 return _editorSimulationPath;
             }
         }
         
+        internal static void ResetEditorPaths()
+        {
+            _editorSimulationPath = null;
+            _editorLoadPathByRunway = null;
+            _readWritePath = null;
+            _cacheDownLoadPath = null;
+        }
         private static string _editorLoadPathByRunway;
         internal static string EditorLoadPath
         {

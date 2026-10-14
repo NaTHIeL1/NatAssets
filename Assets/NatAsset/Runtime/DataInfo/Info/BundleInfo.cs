@@ -1,75 +1,40 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
     internal class BundleInfo : BaseInfo
     {
         internal AssetBundle Bundle;
-        //private string[] _dependBundles = null;
-        internal static BundleInfo CreateBundleInfo(string bundlePath, AssetBundle bundle)
+        private static long _sequence;
+
+        internal static BundleInfo CreateBundleInfo(string path, AssetBundle bundle)
         {
-            BundleInfo bundleInfo = Create<BundleInfo>(bundlePath);
-            bundleInfo.CreateInfo(bundle);
-            return bundleInfo;
+            BundleInfo info = Create<BundleInfo>(path);
+            info.Bundle = bundle;
+            return info;
         }
 
-        private void CreateInfo(AssetBundle bundle)
-        {
-            Bundle = bundle;
-        }
+        protected override void OnAddRefCount() { CancelUnload(); RuntimeData.MarkLifetimeDirty(); }
+        protected override void OnRedRefCount() => RuntimeData.MarkLifetimeDirty();
+        protected override void OnLock() { CancelUnload(); RuntimeData.MarkLifetimeDirty(); }
+        protected override void OnUnLock() => RuntimeData.MarkLifetimeDirty();
 
-        protected override void OnAddRefCount()
+        internal void ScheduleUnload()
         {
-            if (RefCount == 0)
-            {
-                CancelUnLoadTask();
-            }
-        }
-
-        protected override void OnRedRefCount()
-        {
-            if (CheckNeedUnLoadInfo())
-            {
-                LaunchUnLoadTask();
-            }
-        }
-        
-        protected override void OnUnLock()
-        {
-            if (CheckNeedUnLoadInfo())
-            {
-                //启动卸载任务
-                LaunchUnLoadTask();
-            }
-        }
-        
-        private void LaunchUnLoadTask()
-        {
-            if (_unLoadTask != null) return;
-            ComTaskParam comTaskParam = new ComTaskParam(InfoNameGUID, InfoNameGUID);
-            _unLoadTask = BundleUnLoadTask.CreateTask<BundleUnLoadTask>(comTaskParam, Priority.Low);
+            if (_unLoadTask != null || RuntimeData.IsReleasing) return;
+            var parameter = new ComTaskParam("bundle-unload:" + ++_sequence, InfoNameGUID);
+            _unLoadTask = BaseTask.CreateTask<BundleUnLoadTask>(parameter, Priority.Low);
             TaskSystem.UnLoadTaskRunner.AddTask(_unLoadTask);
         }
 
-        private void CancelUnLoadTask()
-        {
-            if (_unLoadTask != null)
-            {
-                _unLoadTask.CancelTask();
-            }
-
-            _unLoadTask = null;
-        }
+        internal bool IsUnloadTask(BaseTask task) => ReferenceEquals(_unLoadTask, task);
+        internal void FinishUnloadTask(BaseTask task) { if (IsUnloadTask(task)) _unLoadTask = null; }
+        internal void CancelUnload() { _unLoadTask?.CancelTask(); _unLoadTask = null; }
 
         protected override void OnClear()
         {
             _unLoadTask = null;
             Bundle = null;
-        }
-
-        public void Clear()
-        {
-            
         }
     }
 }

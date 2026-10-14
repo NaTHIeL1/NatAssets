@@ -95,7 +95,8 @@ namespace NATFrameWork.NatAsset.Editor
             {
                 for (int i = 0; i < temp.Count; i++)
                 {
-                    temp[i].ExecutBeforBuild();
+                    if (!temp[i].ExecutBeforBuild())
+                        return false;
                 }
             }
             catch (Exception e)

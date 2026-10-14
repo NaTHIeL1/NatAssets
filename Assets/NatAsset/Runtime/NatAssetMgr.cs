@@ -17,28 +17,6 @@ namespace NATFrameWork.NatAsset.Runtime
             set => NatAssetSetting.AssetServerURL = value;
         }
         /// <summary>
-        /// 同步资源加载
-        /// </summary>
-        /// <param name="targetPath"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public static AssetHandle LoadAsset(string targetPath, Type type, Priority priority = Priority.Low)
-        {
-            return CoreLoaderMgr.LoadAsset(targetPath, type, priority);
-        }
-
-        /// <summary>
-        /// 同步资源加载
-        /// </summary>
-        /// <param name="targetPath"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public static AssetHandle LoadAsset<T>(string targetPath, Priority priority = Priority.Low)
-        {
-            return CoreLoaderMgr.LoadAsset(targetPath, typeof(T), priority);
-        }
-
-        /// <summary>
         /// 异步资源加载
         /// </summary>
         /// <param name="targetPath"></param>
@@ -75,27 +53,6 @@ namespace NATFrameWork.NatAsset.Runtime
         public static BatchAssetHandle GetBatchAssetHandle()
         {
             return CoreLoaderMgr.GetBatchAssetHandle();
-        }
-
-        /// <summary>
-        /// 实例化方法自动绑定物体
-        /// </summary>
-        /// <param name="targetPath"></param>
-        /// <returns></returns>
-        public static GameObject InstanceObj(string targetPath, Priority priority = Priority.Low)
-        {
-            AssetHandle handle = LoadAsset(targetPath, typeof(GameObject), priority);
-            if (handle.IsSuccess)
-            {
-                GameObject obj = GameObject.Instantiate(handle.Asset as GameObject);
-                handle.OnBind(obj);
-                return obj;
-            }
-            else
-            {
-                Debug.LogErrorFormat("{0}资源加载失败", targetPath);
-                return null;
-            }
         }
 
         /// <summary>

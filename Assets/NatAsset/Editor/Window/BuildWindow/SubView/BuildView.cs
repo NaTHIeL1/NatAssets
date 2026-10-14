@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using NATFrameWork.NatAsset.Runtime;
 using UnityEditor;
@@ -74,6 +74,9 @@ namespace NATFrameWork.NatAsset.Editor
         #endregion
 
         private BuildBundleWindow _buildBundleWindow;
+        private readonly EditorResourcesView _editorResources = new EditorResourcesView();
+        private Vector2 _scroll;
+        private string _buildResult;
 
         public void EditorWindow(EditorWindow editorWindow)
         {
@@ -86,6 +89,7 @@ namespace NATFrameWork.NatAsset.Editor
 
         public void OnGUI()
         {
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
             EditorGUILayout.BeginVertical();
             EditorGUILayout.Space(10);
 
@@ -142,28 +146,45 @@ namespace NATFrameWork.NatAsset.Editor
                     m_CompressionOptions, m_CompressionValues, new[] {GUILayout.Width(405)});
             }
 
+            bool includesWebGL = NatAssetEditorUtil.GetBuildPlatforms(ValidBuildTarget.WebGL);
+            bool includesNative = false;
+            foreach (ValidBuildTarget target in Enum.GetValues(typeof(ValidBuildTarget)))
+                if (target != ValidBuildTarget.WebGL && NatAssetEditorUtil.GetBuildPlatforms(target)) includesNative = true;
+            using (new EditorGUI.DisabledScope(includesWebGL && !includesNative))
             using (new EditorGUILayout.HorizontalScope())
             {
                 NatAssetEditorUtil.GloableEncrypt = (GloableEncrypt) EditorGUILayout.IntPopup(
                     m_GlobalEncryptContent, (int) NatAssetEditorUtil.GloableEncrypt,
                     m_GlobalEncrypts, m_GlobalEncryptValues, new[] {GUILayout.Width(405)});
             }
+            if (includesWebGL)
+                EditorGUILayout.HelpBox("WebGL（含微信小游戏）始终不加密，忽略全局及资源组加密设置。其他平台仍使用原配置。", MessageType.Info);
 
+            using (new EditorGUI.DisabledScope(NatAssetBuildAccess.IsBusy || EditorApplication.isPlayingOrWillChangePlaymode ||
+                EditorApplication.isCompiling || EditorApplication.isUpdating))
             if (GUILayout.Button("BundleBuild"))
             {
-                VersionData buildVersion = VersionData.NowVersion();
-                foreach (ValidBuildTarget keyValue in Enum.GetValues(typeof(ValidBuildTarget)))
+                try
                 {
-                    bool active = NatAssetEditorUtil.GetBuildPlatforms(keyValue);
-                    if (active)
-                        NatBuildConfig.INTERFACE_Build(keyValue, buildVersion);
+                    _buildResult = "";
+                    foreach (ValidBuildTarget target in Enum.GetValues(typeof(ValidBuildTarget)))
+                    {
+                        if (!NatAssetEditorUtil.GetBuildPlatforms(target)) continue;
+                        var result = NatAssetBuildService.BuildResources(target);
+                        _buildResult += $"{target}：{result.Version}\n{result.EditorSyncStatus} {result.EditorSyncWarning}\n";
+                    }
                 }
+                catch (Exception error) { _buildResult += "资源构建停止：" + error.Message; Debug.LogException(error); }
+                _editorResources.Refresh();
             }
-            
+            if (!string.IsNullOrEmpty(_buildResult)) EditorGUILayout.HelpBox(_buildResult, MessageType.Info);
+            _editorResources.Draw();
+
             DrawLeftButtomView();
             //DrawRightButtomView();
 
             EditorGUILayout.EndVertical();
+            EditorGUILayout.EndScrollView();
         }
 
         /// <summary>
@@ -171,7 +192,7 @@ namespace NATFrameWork.NatAsset.Editor
         /// </summary>
         private void DrawLeftButtomView()
         {
-            GUILayout.BeginArea(GetLeftBottom, Styles.background);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("ClearModule", Styles.headerBackground);
 
             if (GUILayout.Button("清理StreamingAsset目录"))
@@ -200,7 +221,7 @@ namespace NATFrameWork.NatAsset.Editor
                 }
             }
 
-            GUILayout.EndArea();
+            EditorGUILayout.EndVertical();
         }
 
         ///// <summary>

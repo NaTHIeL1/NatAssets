@@ -1,7 +1,9 @@
-﻿namespace NATFrameWork.NatAsset.Runtime
+namespace NATFrameWork.NatAsset.Runtime
 {
     public abstract class BaseInfo : IReference
     {
+        private static long _nextGeneration;
+        internal long Generation { get; private set; }
         internal string InfoNameGUID { get; private set; } = string.Empty;
         internal int RefCount { get; private set; } = 0;
         internal bool isLocked { get; private set; } = false;
@@ -11,6 +13,7 @@
         {
             T info = ReferencePool.Get<T>();
             info.InfoNameGUID = infoName;
+            info.Generation = ++_nextGeneration;
             info.OnCreate();
             return info;
         }
@@ -22,12 +25,14 @@
 
         internal void AddRefCount()
         {
-            OnAddRefCount();
             RefCount++;
+            OnAddRefCount();
         }
 
         internal void RedRefCount()
         {
+            if (RefCount == 0)
+                throw new System.InvalidOperationException("资源引用重复释放: " + InfoNameGUID);
             RefCount--;
             OnRedRefCount();
         }
@@ -44,14 +49,6 @@
             OnUnLock();
         }
 
-        //用于在启动强制卸载资源时启用，修改全部的引用计数为1
-        internal void CollectionMark()
-        {
-            isLocked = false;
-            if (RefCount <= 0) return;
-            RefCount = 1;
-        }
-
         protected virtual void OnCreate()
         {
         }
@@ -64,10 +61,6 @@
         {
         }
 
-        protected virtual void OnCollectionMar()
-        {
-        }
-
         protected abstract void OnAddRefCount();
         protected abstract void OnRedRefCount();
         protected abstract void OnClear();
@@ -75,7 +68,9 @@
         public void Clear()
         {
             OnClear();
+            Generation = 0;
             RefCount = 0;
+            isLocked = false;
             InfoNameGUID = string.Empty;
             _unLoadTask = null;
         }

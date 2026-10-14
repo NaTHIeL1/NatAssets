@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -39,6 +39,8 @@ namespace NATFrameWork.NatAsset.Runtime
                 return NatAssetSetting.RemotePath;
             }
         }
+
+        public string LastError { get; protected set; }
 
         public Action<ManifestModeState> LoadCallBack { get; set; }
     }

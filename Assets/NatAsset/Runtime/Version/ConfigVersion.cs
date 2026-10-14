@@ -45,20 +45,13 @@ namespace NATFrameWork.NatAsset.Runtime
         /// <returns></returns>
         private static VersionData ConvertToVersionData(string version)
         {
-            string[] versionStr = version.Split('-');
-            VersionData versionData = new VersionData();
-            versionData.Year = Int32.Parse(versionStr[0]);
-            versionData.Month = Int32.Parse(versionStr[1]);
-            versionData.Day = Int32.Parse(versionStr[2]);
-            versionData.Hour = Int32.Parse(versionStr[3]);
-            versionData.Minutes = Int32.Parse(versionStr[4]);
-            return versionData;
+            return VersionData.ConvertToVersionData(version);
         }
 
     }
 
 
-    public struct VersionData
+    public struct VersionData : IComparable<VersionData>, IEquatable<VersionData>
     {
         public int Year;
         public int Month;
@@ -68,51 +61,74 @@ namespace NATFrameWork.NatAsset.Runtime
 
         public static VersionData NowVersion()
         {
+            DateTime now = DateTime.Now;
             VersionData versionData = new VersionData();
-            versionData.Year = DateTime.Now.Year;
-            versionData.Month = DateTime.Now.Month;
-            versionData.Day = DateTime.Now.Day;
-            versionData.Hour = DateTime.Now.Hour;
-            versionData.Minutes = DateTime.Now.Minute;
+            versionData.Year = now.Year;
+            versionData.Month = now.Month;
+            versionData.Day = now.Day;
+            versionData.Hour = now.Hour;
+            versionData.Minutes = now.Minute;
             return versionData;
         }
 
         public static VersionData ConvertToVersionData(string version)
         {
+            if (string.IsNullOrWhiteSpace(version))
+                throw new FormatException("资源版本不能为空。");
             string[] versionStr = version.Split('-');
+            if (versionStr.Length != 5)
+                throw new FormatException("资源版本格式必须为 yyyy-MM-dd-HH-mm。");
             VersionData versionData = new VersionData();
             versionData.Year = Int32.Parse(versionStr[0]);
             versionData.Month = Int32.Parse(versionStr[1]);
             versionData.Day = Int32.Parse(versionStr[2]);
             versionData.Hour = Int32.Parse(versionStr[3]);
             versionData.Minutes = Int32.Parse(versionStr[4]);
+            // Validate the calendar as well as the number of version components.
+            _ = new DateTime(versionData.Year, versionData.Month, versionData.Day,
+                versionData.Hour, versionData.Minutes, 0);
             return versionData;
+        }
+
+        public int CompareTo(VersionData other)
+        {
+            int result = Year.CompareTo(other.Year);
+            if (result != 0) return result;
+            result = Month.CompareTo(other.Month);
+            if (result != 0) return result;
+            result = Day.CompareTo(other.Day);
+            if (result != 0) return result;
+            result = Hour.CompareTo(other.Hour);
+            return result != 0 ? result : Minutes.CompareTo(other.Minutes);
+        }
+
+        public bool Equals(VersionData other) => CompareTo(other) == 0;
+        public override bool Equals(object obj) => obj is VersionData other && Equals(other);
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = Year;
+                hash = hash * 397 ^ Month;
+                hash = hash * 397 ^ Day;
+                hash = hash * 397 ^ Hour;
+                return hash * 397 ^ Minutes;
+            }
         }
 
         public static bool operator >(VersionData a, VersionData b)
         {
-            if (a.Year > b.Year) return true;
-            if (a.Month > b.Month) return true;
-            if (a.Day > b.Day) return true;
-            if (a.Hour > b.Hour) return true;
-            if (a.Minutes > b.Minutes) return true;
-            return false;
+            return a.CompareTo(b) > 0;
         }
 
         public static bool operator <(VersionData a, VersionData b)
         {
-            if (a.Year < b.Year) return true;
-            if (a.Month < b.Month) return true;
-            if (a.Day < b.Day) return true;
-            if (a.Hour < b.Hour) return true;
-            if (a.Minutes < b.Minutes) return true;
-            return false;
+            return a.CompareTo(b) < 0;
         }
 
         public static bool operator ==(VersionData a, VersionData b)
         {
-            if (a.Year == b.Year && a.Month == b.Month && a.Day == b.Day && a.Hour == b.Hour && a.Minutes == b.Minutes) return true;
-            return false;
+            return a.Equals(b);
         }
 
         public static bool operator !=(VersionData a, VersionData b)

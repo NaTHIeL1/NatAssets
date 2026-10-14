@@ -60,7 +60,8 @@ namespace NATFrameWork.NatAsset.Runtime
         public void Clear()
         {
             OnClear();
-            ReduceRefCountOnLoadFail();
+            ReleaseBorrowedReferences();
+            _infos?.Clear();
             if (_handles != null)
             {
                 foreach (IHandle handle in _handles)
@@ -79,6 +80,7 @@ namespace NATFrameWork.NatAsset.Runtime
             _priority = Priority.Low;
             _runModel = RunModel.Async;
             _providerParam = null;
+            _assetPath = null;
         }
 
         /// <summary>
@@ -256,9 +258,8 @@ namespace NATFrameWork.NatAsset.Runtime
             _infos.Remove(baseInfo);
         }
 
-        private void ReduceRefCountOnLoadFail()
+        private void ReleaseBorrowedReferences()
         {
-            if (_providerResult == ProviderResult.Success) return;
             if (_infos == null) return;
             for (int i = 0; i < _infos.Count; i++)
             {
@@ -274,6 +275,26 @@ namespace NATFrameWork.NatAsset.Runtime
             }
 
             return _infos.Contains(baseInfo);
+        }
+
+        internal void CompleteAssetHandles(object asset, string error, AssetInfo info)
+        {
+            var recipients = new List<AssetHandle>();
+            if (_handles != null)
+                foreach (IHandle candidate in _handles)
+                    if (candidate is AssetHandle handle && handle.IsValid && !handle.IsDone)
+                    {
+                        recipients.Add(handle);
+                        info?.AddRefCount();
+                    }
+            // Reserve every recipient before callbacks: a callback can release itself or cancel
+            // another recipient, and immediate collection must not invalidate later deliveries.
+            foreach (AssetHandle handle in recipients)
+            {
+                if (!handle.IsValid || handle.IsDone) { info?.RedRefCount(); continue; }
+                handle.Error = error;
+                handle.SetAsset(asset);
+            }
         }
 
         protected bool CommonAssetTaskLogic(string assetName,Type type, TaskRunner taskRunner, Priority priority,

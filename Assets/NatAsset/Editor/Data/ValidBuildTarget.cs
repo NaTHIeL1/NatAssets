@@ -1,4 +1,4 @@
-﻿namespace NATFrameWork.NatAsset.Editor
+namespace NATFrameWork.NatAsset.Editor
 {
     [System.Serializable]
     public enum ValidBuildTarget
@@ -19,7 +19,7 @@
         Android = 13,
         //StandaloneLinux = 17,
         StandaloneWindows64 = 19,
-        //WebGL = 20,
+        WebGL = 20,
         //WSAPlayer = 21,
         //StandaloneLinux64 = 24,
         //StandaloneLinuxUniversal = 25,

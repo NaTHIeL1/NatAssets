@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -33,15 +33,13 @@ namespace NATFrameWork.NatAsset.Runtime
                 foreach (BundleManifest bundleManifest in bundleList)
                 {
                     bundleManifest.LoadPath = loadPath;
-                    if (!BundleManifestDic.ContainsKey(bundleManifest.BundlePath))
-                        BundleManifestDic.Add(bundleManifest.BundlePath, bundleManifest);
+                    BundleManifestDic.Add(bundleManifest.BundlePath, bundleManifest);
 
                     List<AssetManifest> assetList = bundleManifest.Assets;
                     foreach (AssetManifest assetManifest in assetList)
                     {
                         assetManifest.BundleName = bundleManifest.BundlePath;
-                        if (!AssetManifestDic.ContainsKey(assetManifest.AssetName))
-                            AssetManifestDic.Add(assetManifest.AssetName, assetManifest);
+                        AssetManifestDic.Add(assetManifest.AssetName, assetManifest);
                     }
                 }
             }
@@ -67,6 +65,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
         public Byte[] SerializeToBinary()
         {
+            ValidateDependencies();
             using (MemoryStream ms = new MemoryStream())
             {
                 using (BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8))
@@ -94,6 +93,8 @@ namespace NATFrameWork.NatAsset.Runtime
 
         public static NatAssetManifest DeserializeFromBinary(Byte[] bytes)
         {
+            if (bytes == null || bytes.Length == 0)
+                throw new InvalidDataException("资源清单数据为空。");
             using (MemoryStream ms = new MemoryStream(bytes))
             {
                 using (BinaryReader br = new BinaryReader(ms, Encoding.UTF8))
@@ -102,15 +103,13 @@ namespace NATFrameWork.NatAsset.Runtime
                     natAssetManifest.BundleManifests = new List<BundleManifest>();
                     natAssetManifest.IncludeGroups = new List<string>();
                     natAssetManifest.NatAssetVersion = br.ReadInt32();
+                    if (natAssetManifest.NatAssetVersion != NatAssetSetting.NatAssetVersion)
+                    {
+                        throw new InvalidDataException($"NatAsset资源清单格式不匹配（{natAssetManifest.NatAssetVersion} / {NatAssetSetting.NatAssetVersion}），需要重新生成资源清单。");
+                    }
                     natAssetManifest.BuildVersion = br.ReadString();
                     natAssetManifest.ReleaseVersion = br.ReadString();
                     natAssetManifest.Platform = br.ReadString();
-                    if (natAssetManifest.NatAssetVersion < NatAssetSetting.NatAssetVersion)
-                    {
-                        Debug.LogWarning(
-                            $"NatAsset配置文件版本号{natAssetManifest.NatAssetVersion}无法匹配当前代码版本{NatAssetSetting.NatAssetVersion}");
-                        return null;
-                    }
                     int groupCount = br.ReadInt32();
                     for(int i = 0; i < groupCount; i++)
                     {
@@ -121,8 +120,38 @@ namespace NATFrameWork.NatAsset.Runtime
                     {
                         natAssetManifest.BundleManifests.Add(BundleManifest.DeserializeFromBinary(br));
                     }
+                    natAssetManifest.ValidateDependencies();
 
                     return natAssetManifest;
+                }
+            }
+        }
+        private void ValidateDependencies()
+        {
+            var assets = new Dictionary<string, AssetManifest>(StringComparer.Ordinal);
+            var bundles = new HashSet<string>(StringComparer.Ordinal);
+            foreach (BundleManifest bundle in BundleManifests)
+            {
+                if (!bundles.Add(bundle.BundlePath)) throw new InvalidDataException("重复 Bundle: " + bundle.BundlePath);
+                foreach (AssetManifest asset in bundle.Assets)
+                {
+                    if (string.IsNullOrEmpty(asset.AssetName) || asset.AssetName.Contains("\\") || assets.ContainsKey(asset.AssetName))
+                        throw new InvalidDataException("无效或重复资源路径: " + asset.AssetName);
+                    assets.Add(asset.AssetName, asset);
+                }
+            }
+            foreach (BundleManifest bundle in BundleManifests)
+            {
+                foreach (string dependency in bundle.Dependencies)
+                    if (!bundles.Contains(dependency)) throw new InvalidDataException("Bundle依赖未登记: " + dependency);
+                foreach (AssetManifest asset in bundle.Assets)
+                {
+                    if (asset.Dependencies == null) throw new InvalidDataException("资源缺少依赖列表: " + asset.AssetName);
+                    if (!Enum.IsDefined(typeof(AssetUnloadPolicy), asset.UnloadPolicy)) throw new InvalidDataException("资源卸载策略无效: " + asset.AssetName);
+                    var unique = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (string dependency in asset.Dependencies)
+                        if (dependency == asset.AssetName || !unique.Add(dependency) || !assets.ContainsKey(dependency))
+                            throw new InvalidDataException($"无效资源依赖: {asset.AssetName} -> {dependency}");
                 }
             }
         }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -9,6 +9,7 @@ namespace NATFrameWork.NatAsset.Runtime
         internal List<string> DepBundles { get; private set; }
 
         private UnLoadSceneOperation _unLoadSceneOperation;
+        internal AssetLifetimeInfo Lifetime;
         public bool IsBuildInScene { get; private set; }
 
         private void CreateInfo(string sceneGUID, Scene scene, List<string> depBundles)
@@ -40,38 +41,22 @@ namespace NATFrameWork.NatAsset.Runtime
 
         protected override void OnClear()
         {
-#if UNITY_EDITOR
-            if (NatAssetSetting.TRunWay == RunWay.PackageOnly)
-            {
-                OnToReleaseScene();
-            }
-#else
-            OnToReleaseScene();
-#endif
+            RuntimeData.ReleaseSceneLifetime(Lifetime);
+            Lifetime = null;
             Scene = default;
             DepBundles = null;
+            _unLoadSceneOperation = null;
+            IsBuildInScene = false;
         }
 
         private void LaunchUnLoadTask()
         {
-            if (Scene.IsValid() && Scene.isLoaded)
+            if (_unLoadSceneOperation == null && Scene.IsValid() && Scene.isLoaded)
             {
                 _unLoadSceneOperation = UnLoadSceneOperation.Create(Scene);
                 SceneSystem.AddOperation(_unLoadSceneOperation);
             }
         }
 
-        private void OnToReleaseScene()
-        {
-            //内置场景资源直接返回
-            if (IsBuildInScene) return;
-            if (DepBundles != null)
-            {
-                foreach (string bundle in DepBundles)
-                {
-                    RuntimeData.GetBundle(bundle).RedRefCount();
-                }
-            }
-        }
     }
 }

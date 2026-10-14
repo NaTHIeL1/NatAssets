@@ -1,10 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using NATFrameWork.NatAsset.Runtime;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.U2D;
+using UnityEditor.U2D;
 
 namespace NATFrameWork.NatAsset.Editor
 {
@@ -225,14 +227,6 @@ namespace NATFrameWork.NatAsset.Editor
             return null;
         }
 
-        internal static void CopyAssetToSpecialEditorPath(ValidBuildTarget buildTarget, string sourcePath)
-        {
-            //组装特殊Editor目录
-            string editorPath = Path.Combine(NatAssetEditorUtil.OutPutPath,
-                 buildTarget.ToString(), SPECIAL_EditorFile).Replace("\\", "/");
-            CopyDicToNewPath(sourcePath, editorPath);
-        }
-
         internal static void CopyDicToNewPath(string sourcePath, string targetPath)
         {
             if (!Directory.Exists(targetPath))
@@ -274,6 +268,7 @@ namespace NATFrameWork.NatAsset.Editor
             catch (Exception e)
             {
                 Debug.LogError(e);
+                throw;
             }
         }
 
@@ -344,6 +339,12 @@ namespace NATFrameWork.NatAsset.Editor
         /// </summary>
         /// <param name="editorBundleEncrypt"></param>
         /// <returns></returns>
+        public static BundleEncrypt SwitchBundleEncrypt(EditorBundleEncrypt editorBundleEncrypt, BuildTarget target)
+        {
+            // Use the requested build target, not the Editor's currently active platform.
+            return target == BuildTarget.WebGL ? BundleEncrypt.Nono : SwitchBundleEncrypt(editorBundleEncrypt);
+        }
+
         public static BundleEncrypt SwitchBundleEncrypt(EditorBundleEncrypt editorBundleEncrypt)
         {
             switch (editorBundleEncrypt)
@@ -374,22 +375,99 @@ namespace NATFrameWork.NatAsset.Editor
         public static List<string> GetDependencies(string assetName, bool recursive = true)
         {
             List<string> result = new List<string>();
-            string[] dependencies = AssetDatabase.GetDependencies(assetName, recursive);
+            HashSet<string> visited = new HashSet<string> { assetName };
+            Stack<string> pending = new Stack<string>();
+            pending.Push(assetName);
 
-            if (dependencies.Length == 0)
-                return result;
-
-            for (int i = 0; i < dependencies.Length; i++)
+            while (pending.Count > 0)
             {
-                string dependencyName = dependencies[i];
-                if (!IsValidAsset(dependencyName))
+                string current = pending.Pop();
+                // MonoScript dependencies are importer metadata (icons/default references),
+                // not the serialized dependencies of the component using the script.
+                // Filtering .cs after GetDependencies(..., true) leaves those assets behind.
+                if (AssetDatabase.GetMainAssetTypeAtPath(current) == typeof(MonoScript))
                     continue;
-                if (dependencyName == assetName)
-                    continue;
-                result.Add(dependencyName);
+
+                foreach (string dependencyName in AssetDatabase.GetDependencies(current, false))
+                {
+                    if (!visited.Add(dependencyName))
+                        continue;
+
+                    if (IsValidAsset(dependencyName))
+                        result.Add(dependencyName);
+
+                    // Non-bundled assets such as LightingDataAsset can still reference
+                    // runtime resources, so validity must not control traversal.
+                    if (recursive)
+                        pending.Push(dependencyName);
+                }
             }
 
             return result;
+        }
+
+        /// <summary>Populate after final bundle ownership has been determined.</summary>
+        public static void PopulateAssetMetadata(NatAssetManifest manifest)
+        {
+            var atlasMembers = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string guid in AssetDatabase.FindAssets("t:SpriteAtlas"))
+            {
+                string atlasPath = AssetDatabase.GUIDToAssetPath(guid);
+                var atlas = AssetDatabase.LoadAssetAtPath<SpriteAtlas>(atlasPath);
+                if (atlas == null) continue;
+                // AssetDatabase includes master-atlas dependencies for variants and folder packables.
+                foreach (string dependency in GetDependencies(atlasPath)) atlasMembers.Add(dependency);
+                foreach (UnityEngine.Object packable in atlas.GetPackables())
+                {
+                    string path = AssetDatabase.GetAssetPath(packable);
+                    if (AssetDatabase.IsValidFolder(path))
+                    {
+                        foreach (string member in AssetDatabase.FindAssets("t:Texture2D", new[] { path }))
+                            atlasMembers.Add(AssetDatabase.GUIDToAssetPath(member));
+                    }
+                    else atlasMembers.Add(path);
+                }
+            }
+            var paths = new HashSet<string>(StringComparer.Ordinal);
+            foreach (BundleManifest bundle in manifest.BundleManifests)
+                foreach (AssetManifest asset in bundle.Assets)
+                {
+                    asset.AssetName = asset.AssetName.Replace('\\', '/');
+                    if (!paths.Add(asset.AssetName)) throw new InvalidDataException("资源有多个 Bundle 归属: " + asset.AssetName);
+                    asset.IsAtlasPackable = atlasMembers.Contains(asset.AssetName);
+                    asset.Dependencies = GetManagedDirectDependencies(asset.AssetName);
+                    asset.UnloadPolicy = AssetUnloadPolicy.BundleOnly;
+                    Type type = AssetDatabase.GetMainAssetTypeAtPath(asset.AssetName);
+                    bool independentTexture = type == typeof(Texture2D)
+                        && AssetImporter.GetAtPath(asset.AssetName) is TextureImporter importer
+                        && importer.textureType != TextureImporterType.Sprite
+                        && AssetDatabase.LoadAllAssetsAtPath(asset.AssetName).Length == 1;
+                    if (!asset.IsAtlasPackable && (type == typeof(TextAsset) || independentTexture))
+                        asset.UnloadPolicy = AssetUnloadPolicy.Independent;
+                }
+            foreach (BundleManifest bundle in manifest.BundleManifests)
+                foreach (AssetManifest asset in bundle.Assets)
+                    foreach (string dependency in asset.Dependencies)
+                        if (!paths.Contains(dependency))
+                            throw new InvalidDataException($"资源依赖未收集: {asset.AssetName} -> {dependency}");
+        }
+
+        private static List<string> GetManagedDirectDependencies(string root)
+        {
+            var result = new HashSet<string>(StringComparer.Ordinal);
+            var visited = new HashSet<string>(StringComparer.Ordinal) { root };
+            var pending = new Stack<string>(AssetDatabase.GetDependencies(root, false));
+            while (pending.Count > 0)
+            {
+                string path = pending.Pop();
+                if (!visited.Add(path) || AssetDatabase.GetMainAssetTypeAtPath(path) == typeof(MonoScript)) continue;
+                if (!path.StartsWith("Assets/", StringComparison.Ordinal) && !path.StartsWith("Packages/", StringComparison.Ordinal)) continue;
+                if (IsValidAsset(path) && !AssetDatabase.IsValidFolder(path)) result.Add(path);
+                else foreach (string dependency in AssetDatabase.GetDependencies(path, false)) pending.Push(dependency);
+            }
+            var sorted = new List<string>(result);
+            sorted.Sort(StringComparer.Ordinal);
+            return sorted;
         }
 
         public static NatAssetManifest ReadNatAssetManifestFromFile(string fullPath)

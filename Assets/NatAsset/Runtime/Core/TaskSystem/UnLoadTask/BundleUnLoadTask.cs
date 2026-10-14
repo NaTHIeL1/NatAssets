@@ -1,90 +1,37 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace NATFrameWork.NatAsset.Runtime
 {
     public class BundleUnLoadTask : BaseTask
     {
-        private float _executionTime = 0;
-
+        private float _elapsed;
+        private BundleInfo _target;
+        private long _generation;
         protected override void OnCreate()
         {
-            _executionTime = 0;
+            _elapsed = 0;
+            _target = RuntimeData.GetBundle(TaskName);
+            _generation = _target?.Generation ?? 0;
         }
-
         public override float Progress
         {
-            get
-            {
-                return _executionTime / NatAssetSetting.AssetDelayTime;
-            }
-            protected set => base.Progress = value;
+            get => NatAssetSetting.BundleDelayTime <= 0 ? 1 : Mathf.Clamp01(_elapsed / NatAssetSetting.BundleDelayTime);
+            protected set { }
         }
-
         internal override void TaskUpdate()
         {
-            if (TaskState == TaskState.Waiting)
-            {
-                SetTaskState(TaskState.Running);
-            }
-
-            if (TaskState == TaskState.Running)
-            {
-                _executionTime += Time.deltaTime;
-                if (_executionTime >= NatAssetSetting.BundleDelayTime)
-                {
-                    UnLoad();
-                    SetTaskState(TaskState.End);
-                }
-            }
-
-            if (TaskState == TaskState.End)
-                return;
+            if (IsDone) return;
+            SetTaskState(TaskState.Running);
+            _elapsed += Time.unscaledDeltaTime;
+            if (_elapsed >= NatAssetSetting.BundleDelayTime) Execute();
         }
-
-        protected override void OnCancelTask()
+        private void Execute()
         {
-            if (TaskState == TaskState.Waiting)
-            {
-                SetTaskState(TaskState.End);
-                return;
-            }
-
-            if (TaskState == TaskState.Running)
-            {
-                _executionTime = 0;
-                Progress = 0;
-                SetTaskState(TaskState.End);
-                return;
-            }
-
-            if (TaskState == TaskState.End)
-            {
-                return;
-            }
+            RuntimeData.TryUnloadBundle(_target, _generation, this);
+            SetTaskState(TaskState.End);
         }
-
-        protected override void OnSwitchToSync()
-        {
-            if (TaskState != TaskState.End)
-            {
-                Progress = 1;
-                UnLoad();
-                SetTaskState(TaskState.End);
-            }
-        }
-
-        protected override void OnClear()
-        {
-            _executionTime = 0;
-        }
-
-        private void UnLoad()
-        {
-            BundleInfo bundleInfo = RuntimeData.GetBundle(TaskName);
-            RuntimeData.RemoveBundleInfo(bundleInfo);
-            bundleInfo.Bundle.Unload(true);
-            bundleInfo.Bundle = null;
-            BundleInfo.Release(bundleInfo);
-        }
+        protected override void OnCancelTask() => SetTaskState(TaskState.End);
+        protected override void OnSwitchToSync() { if (!IsDone) Execute(); }
+        protected override void OnClear() { _target = null; _generation = 0; _elapsed = 0; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NATFrameWork.NatAsset.Runtime;
 using UnityEditor;
@@ -20,7 +20,7 @@ namespace NATFrameWork.NatAsset.Editor
                     string[] guids = AssetDatabase.FindAssets($"t:{nameof(NatAssetBuildSetting)}");
                     if (guids.Length == 0)
                     {
-                        AssetDatabase.CreateAsset(new NatAssetBuildSetting(), "Assets/NatAssetBuildSetting.asset");
+                        AssetDatabase.CreateAsset(CreateInstance<NatAssetBuildSetting>(), "Assets/NatAssetBuildSetting.asset");
                         guids = AssetDatabase.FindAssets($"t:{nameof(NatAssetBuildSetting)}");
                     }
 

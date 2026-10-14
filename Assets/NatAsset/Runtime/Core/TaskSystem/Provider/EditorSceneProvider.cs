@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -35,14 +35,14 @@ namespace NATFrameWork.NatAsset.Runtime
                 //operation为空代表加载失败或使用了同步加载，scene=default代表加载失败
                 if (_operation == null)
                 {
-                    SetSceneSetting(_scene, false);
                     SetProviderState(ProviderState.Finish);
+                    SetSceneSetting(_scene, false);
                 }
 
                 if (_operation != null && _operation.isDone)
                 {
-                    SetSceneSetting(_scene, false);
                     SetProviderState(ProviderState.Finish);
+                    SetSceneSetting(_scene, false);
                 }
             }
         }
@@ -89,15 +89,15 @@ namespace NATFrameWork.NatAsset.Runtime
             if (scene == default)
             {
                 error = $"场景路径:{AssetPath},加载场景:{_sceneName}时出错，检查场景路径是否正确";
-                SetSceneHandle(scene, error, null);
                 SetProviderResult(ProviderResult.Faild);
+                SetSceneHandle(scene, error, null);
                 return;
             }
 
             SceneInfo sceneInfo = SceneInfo.CreateSceneInfo(_providerGUID, scene, null);
             RuntimeData.AddSceneInfo(sceneInfo);
-            SetSceneHandle(scene, error, sceneInfo);
             SetProviderResult(ProviderResult.Success);
+            SetSceneHandle(scene, error, sceneInfo);
         }
 
         private void SetSceneHandle(Scene scene, string error, SceneInfo sceneInfo)

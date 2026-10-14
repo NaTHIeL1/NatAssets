@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace NATFrameWork.NatAsset.Runtime
@@ -36,7 +36,9 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             if (_operationState == OperationState.Waiting)
             {
-                if (_scene.IsValid() && _scene.isLoaded)
+                if (!_scene.IsValid() || !_scene.isLoaded)
+                    SetOperationState(OperationState.Finish);
+                else if (SceneManager.sceneCount > 1)
                 {
                     _operation = SceneManager.UnloadSceneAsync(_scene);
                     if (_operation == null)
@@ -77,6 +79,7 @@ namespace NATFrameWork.NatAsset.Runtime
         private void ReleaseSceneInfo()
         {
             SceneInfo sceneInfo = RuntimeData.GetScene(_scene);
+            if (sceneInfo == null) return;
             RuntimeData.RemoveSceneInfo(sceneInfo);
             SceneInfo.Release(sceneInfo);
         }

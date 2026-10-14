@@ -22,6 +22,7 @@ namespace NATFrameWork.NatAsset.Runtime
 
         public void OnUpdate()
         {
+            if (!IsValid || IsDone) return;
             bool isComplete = true;
             for (int i = 0; i < _assetHandles.Count; i++)
             {
@@ -34,9 +35,15 @@ namespace NATFrameWork.NatAsset.Runtime
             if (isComplete)
             {
                 _handleState = HandleState.Finish;
-                _handleResult = HandleResult.Success;
-                OnLoadedCallback?.Invoke(_assetHandles);
-                AsyncStateCallback?.Invoke();
+                _handleResult = _assetHandles.TrueForAll(handle => handle.IsSuccess)
+                    ? HandleResult.Success : HandleResult.Faild;
+                var callbacks = OnLoadedCallback;
+                var continuations = AsyncStateCallback;
+                var handles = new List<AssetHandle>(_assetHandles);
+                OnLoadedCallback = null;
+                AsyncStateCallback = null;
+                CompletionCallbacks.Invoke(callbacks, handles, Name);
+                CompletionCallbacks.Invoke(continuations, Name);
             }
         }
 
@@ -51,7 +58,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 }
                 else if (IsDone)
                 {
-                    value?.Invoke(_assetHandles);
+                    CompletionCallbacks.Invoke(value, new List<AssetHandle>(_assetHandles), Name);
                     return;
                 }
 

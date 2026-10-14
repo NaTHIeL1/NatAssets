@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,9 +7,10 @@ namespace NATFrameWork.NatAsset.Runtime
     public static class NatAssetUtil
     {
         //初始化配置
-        public static void Init(BaseManifestModeLoader modelLoader, Action callback)
+        public static void Init(BaseManifestModeLoader modelLoader, Action callback, Action<string> onFailure = null)
         {
             RuntimeData.CompleteCallBack += callback;
+            RuntimeData.FailureCallBack += onFailure;
             CoreLoaderMgr.Init(modelLoader);
         }
 
@@ -22,6 +23,12 @@ namespace NATFrameWork.NatAsset.Runtime
         public static void Release()
         {
             CoreLoaderMgr.Release();
+        }
+
+        /// <summary>等待进行中的加载、场景卸载和资源清理完成；重启后再初始化。</summary>
+        public static System.Threading.Tasks.Task ReleaseAsync()
+        {
+            return CoreLoaderMgr.Release();
         }
 
         /// <summary>

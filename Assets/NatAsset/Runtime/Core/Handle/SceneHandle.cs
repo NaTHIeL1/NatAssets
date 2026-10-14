@@ -11,6 +11,8 @@ namespace NATFrameWork.NatAsset.Runtime
 
 
         private LoadSceneMode _loadSceneMode = LoadSceneMode.Single;
+        private SceneInfo _ownedScene;
+        private long _ownedGeneration;
 
         internal Action<SceneHandle> OnLoadedCallback;
         public bool IsMainScene => _loadSceneMode == LoadSceneMode.Single;
@@ -50,8 +52,11 @@ namespace NATFrameWork.NatAsset.Runtime
 
         internal void SetScene(Scene sceneObj)
         {
+            if (!IsValid || IsDone) return;
             SetProvider(null);
             SceneObj = sceneObj;
+            _ownedScene = RuntimeData.GetScene(sceneObj);
+            _ownedGeneration = _ownedScene?.Generation ?? 0;
             if (SceneObj == default)
             {
                 _handleResult = HandleResult.Faild;
@@ -72,8 +77,13 @@ namespace NATFrameWork.NatAsset.Runtime
             if (CheckTokenCancel())
                 return;
             CheckError();
-            OnLoadedCallback?.Invoke(this);
-            AsyncStateCallback?.Invoke();
+            var callbacks = OnLoadedCallback;
+            var continuations = AsyncStateCallback;
+            string context = Name;
+            OnLoadedCallback = null;
+            AsyncStateCallback = null;
+            CompletionCallbacks.Invoke(callbacks, this, context);
+            CompletionCallbacks.Invoke(continuations, context);
         }
 
         public event Action<SceneHandle> OnLoaded
@@ -87,7 +97,7 @@ namespace NATFrameWork.NatAsset.Runtime
                 }
                 else if (IsDone)
                 {
-                    value?.Invoke(this);
+                    CompletionCallbacks.Invoke(value, this, Name);
                     return;
                 }
 
@@ -130,8 +140,9 @@ namespace NATFrameWork.NatAsset.Runtime
 
         private void InternalUnLoad()
         {
-            SceneInfo sceneInfo = RuntimeData.GetScene(SceneObj);
-            if (sceneInfo == null) return;
+            SceneInfo sceneInfo = _ownedScene;
+            _ownedScene = null;
+            if (sceneInfo == null || sceneInfo.Generation != _ownedGeneration || RuntimeData.IsReleasing) return;
             sceneInfo.RedRefCount();
         }
 
@@ -144,6 +155,8 @@ namespace NATFrameWork.NatAsset.Runtime
         {
             SceneObj = default;
             OnLoadedCallback = null;
+            _ownedScene = null;
+            _ownedGeneration = 0;
         }
 
         public HandleAwait<SceneHandle> GetAwaiter()
